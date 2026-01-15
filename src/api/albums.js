@@ -6,5 +6,5 @@ const api = axios.create({
 });
 
 export const fetchAlbums = (params) => {
-  return api.get('/albums', { params });
+  return api.get('/api/albums', { params });
 };

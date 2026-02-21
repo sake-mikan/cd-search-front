@@ -1,0 +1,146 @@
+﻿import { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom';
+import { getApiOrigin } from '../api/baseUrl';
+
+const API_BASE_URL = getApiOrigin();
+
+export default function ArtistTracks() {
+  const { id } = useParams(); // artist id
+  const [searchParams] = useSearchParams();
+  const role = searchParams.get('role') || '';
+
+  const navigate = useNavigate();
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const apiUrl = useMemo(() => {
+    const base = (API_BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/, '');
+    const qs = role ? `?role=${encodeURIComponent(role)}` : '';
+    return `${base}/api/artists/${id}/tracks${qs}`;
+  }, [id, role]);
+
+  const load = async () => {
+    setLoading(true);
+    setError('');
+
+    try {
+      const res = await fetch(apiUrl, { headers: { Accept: 'application/json' } });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      setData(await res.json());
+    } catch (e) {
+      console.error(e);
+      setError('関連楽曲一覧の取得に失敗しました。');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [apiUrl]);
+
+  const tracks = data?.tracks?.data ?? [];
+  const artistName = data?.artist?.name ?? `Artist ID: ${id}`;
+
+  const roleLabel = (r) => {
+    if (r === 'vocal') return '歌唱';
+    if (r === 'lyricist') return '作詞';
+    if (r === 'composer') return '作曲';
+    if (r === 'arranger') return '編曲';
+    return '';
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-6 text-gray-900 dark:text-gray-100">
+      <div className="max-w-5xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold">{artistName} の関連楽曲</h1>
+            {role && (
+              <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+                絞り込み: {roleLabel(role)}（{role}）
+              </p>
+            )}
+          </div>
+
+          <button
+            onClick={() => navigate(-1)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            戻る
+          </button>
+        </div>
+
+        {loading && (
+          <div className="mt-6 p-4 rounded bg-gray-100 dark:bg-gray-700">読み込み中...</div>
+        )}
+
+        {error && (
+          <div className="mt-6 p-4 rounded bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-200">
+            {error}
+          </div>
+        )}
+
+        {!loading && !error && (
+          <div className="mt-6 overflow-x-auto">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-gray-200 dark:bg-gray-700">
+                  <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left">
+                    曲名
+                  </th>
+                  <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left">
+                    アルバム
+                  </th>
+                  <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left w-40">
+                    形態
+                  </th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {tracks.map((t) => (
+                  <tr key={t.id} className="hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 font-medium">
+                      {t.title}
+                    </td>
+
+                    <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
+                      {t.album?.id ? (
+                        <Link
+                          to={`/albums/${t.album.id}`}
+                          className="text-blue-600 dark:text-sky-400 hover:underline underline-offset-4"
+                        >
+                          {t.album.title}
+                        </Link>
+                      ) : (
+                        <span className="text-gray-500 dark:text-gray-400">-</span>
+                      )}
+                    </td>
+
+                    <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
+                      {t.album?.edition ?? '-'}
+                    </td>
+                  </tr>
+                ))}
+
+                {tracks.length === 0 && (
+                  <tr>
+                    <td
+                      className="border border-gray-300 dark:border-gray-600 px-3 py-6 text-center text-gray-600 dark:text-gray-300"
+                      colSpan={3}
+                    >
+                      データがありません
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

@@ -10,6 +10,8 @@ React + Vite で構築した CD 情報検索フロントエンドです。
 - ソート: タイトル / アーティスト / 規格品番 / 発売日
 - 検索未入力時は発売日順の上位件数のみ表示（ページネーションなし）
 - 検索実行時はページネーション表示
+- 検索結果件数を表示
+- API側の安全制限により、検索結果は最大1000件まで表示
 
 検索未入力時の表示件数は `src/App.jsx` の `TOP_RELEASE_LIMIT` で変更できます。
 
@@ -101,6 +103,8 @@ VITE_API_URL=http://127.0.0.1:8000
 - `GET /api/albums/{id}`
 - `GET /api/artists/{artist}/tracks?role=...`
 - `GET /api/tracks`
+
+`GET /api/albums` は `result_limit` / `result_limited` を返すため、上限到達時の表示制御に利用しています。
 
 ## 主要ディレクトリ
 ```text

@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Check, Copy, Loader2, RotateCcw, Upload, WandSparkles } from 'lucide-react';
-import { getApiOrigin } from '../api/baseUrl';
+import { buildApiUrl } from "../api/baseUrl";
 
-const API_BASE_URL = getApiOrigin();
 const MAX_ARTWORK_BYTES = 2 * 1024 * 1024;
 
 function detectTagWriteSupport() {
@@ -112,6 +111,31 @@ function showValue(value) {
 function copyValue(value) {
   if (value == null) return '';
   return String(value).trim();
+}
+
+function albumLinkTypeLabel(type) {
+  switch (String(type ?? '').toLowerCase()) {
+    case 'official':
+      return '公式';
+    case 'streaming':
+      return '配信';
+    case 'youtube':
+      return 'YouTube';
+    case 'store':
+      return '販売';
+    case 'wiki':
+      return 'Wiki';
+    default:
+      return 'その他';
+  }
+}
+
+function albumLinkTitle(link) {
+  const title = String(link?.title ?? '').trim();
+  if (title !== '') return title;
+  const provider = String(link?.provider ?? '').trim();
+  if (provider !== '') return provider;
+  return String(link?.url ?? '');
 }
 
 function buildTagPayload(album, track, releaseYear, trackTotalByDisk, discTotal) {
@@ -286,8 +310,7 @@ export default function AlbumDetail() {
   const copyTimerRef = useRef(null);
 
   const apiUrl = useMemo(() => {
-    const base = (API_BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/, '');
-    return `${base}/api/albums/${id}`;
+    return buildApiUrl(`/albums/${id}`);
   }, [id]);
   const workerWasmUrl = useMemo(() => {
     if (typeof window === 'undefined') return '/taglib.wasm';
@@ -409,6 +432,17 @@ export default function AlbumDetail() {
 
   const orderedTracks = useMemo(() => normalizeTracks(album?.tracks), [album?.tracks]);
   const releaseYear = useMemo(() => releaseYearText(album), [album]);
+  const albumLinks = useMemo(() => {
+    const links = Array.isArray(album?.links) ? album.links.slice() : [];
+    return links.sort((a, b) => {
+      const aType = String(a?.type ?? '').toLowerCase();
+      const bType = String(b?.type ?? '').toLowerCase();
+      const aRank = aType === 'official' ? 0 : 1;
+      const bRank = bType === 'official' ? 0 : 1;
+      if (aRank !== bRank) return aRank - bRank;
+      return aType.localeCompare(bType, 'ja');
+    });
+  }, [album?.links]);
 
   const trackTotalByDisk = useMemo(() => {
     const map = {};
@@ -981,40 +1015,32 @@ export default function AlbumDetail() {
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-6 text-gray-900 dark:text-gray-100">
+      <div className="max-w-7xl mx-auto mb-3 flex justify-end">
+        <button
+          type="button"
+          onClick={() => navigate('/')}
+          className="inline-flex items-center gap-2 px-3 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          一覧へ
+        </button>
+      </div>
+
       <div className="max-w-7xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-        <div className="flex items-center justify-between gap-3 mb-4">
-          <div className="flex items-center gap-2 min-w-0">
-            <h1 className="text-2xl font-bold break-words min-w-0">{album?.title ?? `アルバム ID: ${id}`}</h1>
-            <div className="inline-flex items-center gap-1 shrink-0">
-              <div className="inline-flex items-center rounded border border-gray-300 dark:border-gray-600 px-2 py-1 text-sm">
-                <span>形態: {showValue(album?.edition)}</span>
-              </div>
-              {renderCopyIcon(albumTitleEditionText, 'album-title-edition', 'アルバム名+形態')}
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => writeClipboard(allDisplayText, 'all', '画面表示データ')}
-              disabled={!allDisplayText}
-              className="inline-flex items-center gap-2 px-3 py-2 rounded bg-gray-200 text-gray-800 hover:bg-gray-300 disabled:opacity-60 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
-            >
-              <Copy className="w-4 h-4" />
-              表示データをコピー
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/')}
-              className="inline-flex items-center gap-2 px-3 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              一覧へ
-            </button>
-          </div>
+        <div className="hidden">
+          <button
+            type="button"
+            onClick={() => writeClipboard(allDisplayText, 'all', '画面表示データ')}
+            disabled={!allDisplayText}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded bg-gray-200 text-gray-800 hover:bg-gray-300 disabled:opacity-60 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
+          >
+            <Copy className="w-4 h-4" />
+            表示データをコピー
+          </button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[160px_1fr] gap-4 mb-6">
-          <div className="w-40 h-40 rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+        <div className="grid grid-cols-1 lg:grid-cols-[256px_1fr] gap-5 mb-6 items-start">
+          <div className="w-56 h-56 sm:w-64 sm:h-64 rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
             {album?.cover_image_url ? (
               <img
                 src={album.cover_image_url}
@@ -1027,6 +1053,16 @@ export default function AlbumDetail() {
           </div>
 
           <div className="space-y-2 text-sm text-gray-700 dark:text-gray-200">
+            <div className="flex items-start gap-2 min-w-0 border-b border-gray-200/70 dark:border-gray-700/70 pb-2">
+              <h1 className="text-2xl font-bold break-words min-w-0">{album?.title ?? `アルバム ID: ${id}`}</h1>
+              <div className="inline-flex items-center gap-1 shrink-0">
+                <div className="inline-flex items-center rounded border border-gray-300 dark:border-gray-600 px-2 py-1 text-sm">
+                  <span>形態: {showValue(album?.edition)}</span>
+                </div>
+                {renderCopyIcon(albumTitleEditionText, 'album-title-edition', 'アルバム名+形態')}
+              </div>
+            </div>
+
             <div className="grid grid-cols-[160px_minmax(0,1fr)] gap-2 items-start border-b border-gray-200/70 dark:border-gray-700/70 py-1">
               <span className="text-left text-gray-500 dark:text-gray-300">アルバムアーティスト</span>
               <div className="inline-flex max-w-full items-start gap-2">
@@ -1070,6 +1106,32 @@ export default function AlbumDetail() {
             </div>
           </div>
         </div>
+
+        {albumLinks.length > 0 && (
+          <div className="mb-6 rounded border border-gray-200 dark:border-gray-700 p-4">
+            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">関連リンク</h2>
+            <ul className="space-y-2 text-sm">
+              {albumLinks.map((link) => (
+                <li key={link.id} className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center rounded border border-gray-300 dark:border-gray-600 px-2 py-0.5 text-xs text-gray-600 dark:text-gray-300">
+                    {albumLinkTypeLabel(link.type)}
+                  </span>
+                  <a
+                    href={link.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-blue-600 dark:text-sky-400 hover:underline break-all"
+                  >
+                    {albumLinkTitle(link)}
+                  </a>
+                  {link.region && (
+                    <span className="text-xs text-gray-500 dark:text-gray-400">({link.region})</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {copyNotice && (
           <div className="mb-4 text-sm text-emerald-700 dark:text-emerald-300">{copyNotice}</div>

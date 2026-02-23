@@ -1,11 +1,11 @@
 import axios from 'axios';
-import { getApiOrigin } from './baseUrl';
+import { getApiBaseUrl } from './baseUrl';
 
 const api = axios.create({
-  baseURL: getApiOrigin(),
+  baseURL: getApiBaseUrl(),
   timeout: 7000,
 });
 
 export const fetchAlbums = (params) => {
-  return api.get('/api/albums', { params });
+  return api.get('/albums', { params });
 };

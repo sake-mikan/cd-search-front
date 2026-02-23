@@ -1,8 +1,7 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+﻿import { buildApiUrl } from "../api/baseUrl";
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getApiOrigin } from '../api/baseUrl';
 
-const API_BASE_URL = getApiOrigin();
 
 function roleLabel(role) {
   if (role === 'vocal') return '歌唱';
@@ -25,12 +24,11 @@ export default function TrackSearch() {
   const [lastPage, setLastPage] = useState(1);
 
   const apiUrl = useMemo(() => {
-    const base = (API_BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/, '');
     const q = new URLSearchParams();
     if (submittedTitle.trim() !== '') q.set('title', submittedTitle.trim());
     q.set('page', String(currentPage));
     q.set('per_page', '20');
-    return `${base}/api/tracks?${q.toString()}`;
+    return buildApiUrl(`/tracks?${q.toString()}`);
   }, [submittedTitle, currentPage]);
 
   const load = async () => {
@@ -115,8 +113,24 @@ export default function TrackSearch() {
     return pages;
   };
 
-  const groupCredits = (artists) => {
-    if (!Array.isArray(artists)) return {};
+  const groupCredits = (track) => {
+    if (track?.credits && typeof track.credits === 'object') {
+      const normalized = {};
+      for (const [role, list] of Object.entries(track.credits)) {
+        if (!Array.isArray(list) || list.length === 0) continue;
+        normalized[role] = list
+          .map((item) => ({
+            id: item?.id ?? null,
+            name: item?.name ?? '',
+          }))
+          .filter((item) => String(item.name).trim() !== '');
+      }
+      if (Object.keys(normalized).length > 0) {
+        return normalized;
+      }
+    }
+
+    const artists = Array.isArray(track?.artists) ? track.artists : [];
     const map = {};
     for (const a of artists) {
       const role = a?.pivot?.role;
@@ -215,7 +229,7 @@ export default function TrackSearch() {
 
                 <tbody>
                   {items.map((t) => {
-                    const credits = groupCredits(t.artists);
+                    const credits = groupCredits(t);
                     return (
                       <tr key={t.id} className="hover:bg-gray-100 dark:hover:bg-gray-700">
                         <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 font-medium">
@@ -311,3 +325,4 @@ export default function TrackSearch() {
     </div>
   );
 }
+

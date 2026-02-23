@@ -1,8 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom';
-import { getApiOrigin } from '../api/baseUrl';
-
-const API_BASE_URL = getApiOrigin();
+import { buildApiUrl } from '../api/baseUrl';
 
 export default function ArtistTracks() {
   const { id } = useParams(); // artist id
@@ -15,9 +13,8 @@ export default function ArtistTracks() {
   const [error, setError] = useState('');
 
   const apiUrl = useMemo(() => {
-    const base = (API_BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/, '');
     const qs = role ? `?role=${encodeURIComponent(role)}` : '';
-    return `${base}/api/artists/${id}/tracks${qs}`;
+    return buildApiUrl(`/artists/${id}/tracks${qs}`);
   }, [id, role]);
 
   const load = async () => {

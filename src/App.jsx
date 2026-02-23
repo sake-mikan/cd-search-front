@@ -21,6 +21,9 @@ function App() {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [lastPage, setLastPage] = useState(1);
+  const [resultCount, setResultCount] = useState(0);
+  const [resultLimited, setResultLimited] = useState(false);
+  const [resultLimit, setResultLimit] = useState(1000);
 
   const [sort, setSort] = useState('release_date');
   const [order, setOrder] = useState('desc');
@@ -70,8 +73,15 @@ function App() {
       setAlbums(response.data.data ?? []);
       setCurrentPage(response.data.current_page ?? 1);
       setLastPage(response.data.last_page ?? 1);
+      const totalValue = Number(response.data.total ?? 0);
+      setResultCount(Number.isFinite(totalValue) ? totalValue : 0);
+      setResultLimited(Boolean(response.data.result_limited));
+      const limitValue = Number(response.data.result_limit ?? 1000);
+      setResultLimit(Number.isFinite(limitValue) && limitValue > 0 ? limitValue : 1000);
     } catch {
       setError('データの取得に失敗しました。');
+      setResultCount(0);
+      setResultLimited(false);
     } finally {
       setLoading(false);
     }
@@ -322,6 +332,12 @@ function App() {
 
                 {loading && <p className="text-gray-400">Loading...</p>}
                 {error && <p className="text-red-500">{error}</p>}
+                {!loading && !error && !isEmptySearch() && (
+                  <p className="mb-3 text-sm text-gray-600 dark:text-gray-300">
+                    検索結果: {resultCount}件
+                    {resultLimited ? `（上限 ${resultLimit}件）` : ''}
+                  </p>
+                )}
 
                 <table className="w-full border-collapse">
                   <thead>

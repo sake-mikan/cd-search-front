@@ -1,6 +1,7 @@
 ﻿import { buildApiUrl } from "../api/baseUrl";
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Moon, Sun } from 'lucide-react';
 
 
 function roleLabel(role) {
@@ -11,7 +12,7 @@ function roleLabel(role) {
   return role;
 }
 
-export default function TrackSearch() {
+export default function TrackSearch({ isDarkMode = false, onToggleTheme = () => {} }) {
   const [title, setTitle] = useState('');
   const [submittedTitle, setSubmittedTitle] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
@@ -142,18 +143,32 @@ export default function TrackSearch() {
   };
 
   const showResults = hasSearched && !loading && !error;
+  const themeLabel = isDarkMode ? 'ライト' : 'ダーク';
+  const themeTitle = isDarkMode ? 'ライトモードに切り替え' : 'ダークモードに切り替え';
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-6 text-gray-900 dark:text-gray-100">
-      <div className="max-w-6xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-        <div className="flex items-start justify-between gap-4">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-3 pb-6 pt-4 sm:p-6 text-gray-900 dark:text-gray-100">
+      <div className="max-w-6xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <h1 className="text-2xl font-bold">曲検索</h1>
-          <Link
-            to="/"
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            アルバム一覧へ
-          </Link>
+          <div className="flex items-center gap-2 self-start">
+            <button
+              type="button"
+              onClick={onToggleTheme}
+              className="inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-700 shadow hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700"
+              title={themeTitle}
+              aria-label={themeTitle}
+            >
+              {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+              <span>{themeLabel}</span>
+            </button>
+            <Link
+              to="/"
+              className="self-start px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              アルバム一覧へ
+            </Link>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="mt-4 flex flex-col md:flex-row gap-3">

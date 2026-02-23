@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Check, Copy, Loader2, RotateCcw, Upload, WandSparkles } from 'lucide-react';
+import { Check, Copy, Loader2, Moon, RotateCcw, Sun, Upload, WandSparkles } from 'lucide-react';
 import { buildApiUrl } from "../api/baseUrl";
 
 const MAX_ARTWORK_BYTES = 2 * 1024 * 1024;
@@ -280,7 +280,7 @@ async function resolveUniqueFileName(directoryHandle, desiredName, currentName) 
   }
 }
 
-export default function AlbumDetail() {
+export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => {} }) {
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -305,7 +305,6 @@ export default function AlbumDetail() {
   const [renamePattern, setRenamePattern] = useState('$num(%track%,2) %title%');
   const [isTagOptionExpanded, setIsTagOptionExpanded] = useState(false);
 
-  const [copyNotice, setCopyNotice] = useState('');
   const [copiedToken, setCopiedToken] = useState('');
   const copyTimerRef = useRef(null);
 
@@ -333,19 +332,18 @@ export default function AlbumDetail() {
     setTagFiles((prev) => prev.map((f) => (f.key === key ? { ...f, ...patch } : f)));
   }, []);
 
-  const writeClipboard = useCallback(async (text, token, label) => {
+  const writeClipboard = useCallback(async (text, token) => {
     if (!text) return;
     try {
       if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(text);
       else if (!copyByExecCommand(text)) throw new Error('クリップボードにコピーできませんでした。');
       setCopiedToken(token);
-      setCopyNotice(`${label} をコピーしました。`);
       if (copyTimerRef.current) clearTimeout(copyTimerRef.current);
       copyTimerRef.current = setTimeout(() => {
         setCopiedToken((prev) => (prev === token ? '' : prev));
       }, 1200);
-    } catch (e) {
-      setCopyNotice(e.message || 'コピーに失敗しました。');
+    } catch {
+      // no-op: copy result is represented by the icon state only
     }
   }, []);
 
@@ -381,7 +379,6 @@ export default function AlbumDetail() {
     setIsWriting(false);
     setRenameOnWrite(false);
     setIsTagOptionExpanded(false);
-    setCopyNotice('');
     setCopiedToken('');
   }, [id]);
 
@@ -543,14 +540,18 @@ export default function AlbumDetail() {
     [orderedTracks]
   );
 
+  const editionText = useMemo(() => copyValue(album?.edition), [album?.edition]);
+  const hasEdition = editionText !== '' && editionText !== '-';
+
   const albumTitleEditionText = useMemo(() => {
     const title = copyValue(album?.title);
-    const edition = copyValue(album?.edition);
-    if (title && edition) return `${title} [${edition}]`;
+    if (title && hasEdition) return `${title} [${editionText}]`;
     if (title) return title;
-    if (edition) return `[${edition}]`;
+    if (hasEdition) return `[${editionText}]`;
     return '';
-  }, [album?.title, album?.edition]);
+  }, [album?.title, editionText, hasEdition]);
+
+  const albumTitleCopyLabel = hasEdition ? 'アルバム名+形態' : 'アルバム名';
 
   const allDisplayText = useMemo(() => {
     if (!album) return '';
@@ -558,13 +559,15 @@ export default function AlbumDetail() {
       `アルバム: ${showValue(album.title)}`,
       `アルバムアーティスト: ${showValue(album?.album_artist?.name)}`,
       `規格品番: ${showValue(album.catalog_number)}`,
-      `形態: ${showValue(album.edition)}`,
       `レーベル: ${showValue(album.label)}`,
       `発売日: ${showValue(album.release_date)}`,
       `リリース年: ${showValue(releaseYear)}`,
       '',
       'Disc\tTr\t曲名\tアーティスト\t作詞\t作曲\t編曲\tジャンル\t時間\tコメント',
     ];
+    if (hasEdition) {
+      lines.splice(3, 0, `形態: ${editionText}`);
+    }
     for (const track of orderedTracks) {
       lines.push(
         [
@@ -582,7 +585,7 @@ export default function AlbumDetail() {
       );
     }
     return lines.join('\n');
-  }, [album, orderedTracks, releaseYear]);
+  }, [album, editionText, hasEdition, orderedTracks, releaseYear]);
 
   const renderCopyIcon = (text, token, label) => {
     const copied = copiedToken === token;
@@ -590,7 +593,7 @@ export default function AlbumDetail() {
       <button
         type="button"
         disabled={!text}
-        onClick={() => writeClipboard(text, token, label)}
+        onClick={() => writeClipboard(text, token)}
         className="inline-flex h-7 w-7 items-center justify-center rounded border border-gray-300 text-gray-500 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white"
         title={`${label}をコピー`}
         aria-label={`${label}をコピー`}
@@ -1013,24 +1016,36 @@ export default function AlbumDetail() {
     setIsWriting(false);
   };
 
+  const themeLabel = isDarkMode ? 'ライト' : 'ダーク';
+  const themeTitle = isDarkMode ? 'ライトモードに切り替え' : 'ダークモードに切り替え';
+
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-6 text-gray-900 dark:text-gray-100">
-      <div className="max-w-7xl mx-auto mb-3 flex justify-end">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-3 pb-6 pt-4 sm:p-6 text-gray-900 dark:text-gray-100">
+      <div className="max-w-7xl mx-auto mb-3 flex items-center justify-between gap-2">
         <button
           type="button"
           onClick={() => navigate('/')}
-          className="inline-flex items-center gap-2 px-3 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+          className="inline-flex items-center px-3 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 text-sm"
         >
-          <ArrowLeft className="w-4 h-4" />
-          一覧へ
+          一覧へ戻る
+        </button>
+        <button
+          type="button"
+          onClick={onToggleTheme}
+          className="inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-700 shadow hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700"
+          title={themeTitle}
+          aria-label={themeTitle}
+        >
+          {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+          <span>{themeLabel}</span>
         </button>
       </div>
 
-      <div className="max-w-7xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow p-6">
+      <div className="max-w-7xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow p-4 sm:p-6">
         <div className="hidden">
           <button
             type="button"
-            onClick={() => writeClipboard(allDisplayText, 'all', '画面表示データ')}
+            onClick={() => writeClipboard(allDisplayText, 'all')}
             disabled={!allDisplayText}
             className="inline-flex items-center gap-2 px-3 py-2 rounded bg-gray-200 text-gray-800 hover:bg-gray-300 disabled:opacity-60 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
           >
@@ -1040,7 +1055,7 @@ export default function AlbumDetail() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[256px_1fr] gap-5 mb-6 items-start">
-          <div className="w-56 h-56 sm:w-64 sm:h-64 rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+          <div className="w-40 h-40 sm:w-56 sm:h-56 lg:w-64 lg:h-64 rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
             {album?.cover_image_url ? (
               <img
                 src={album.cover_image_url}
@@ -1053,17 +1068,19 @@ export default function AlbumDetail() {
           </div>
 
           <div className="space-y-2 text-sm text-gray-700 dark:text-gray-200">
-            <div className="flex items-start gap-2 min-w-0 border-b border-gray-200/70 dark:border-gray-700/70 pb-2">
-              <h1 className="text-2xl font-bold break-words min-w-0">{album?.title ?? `アルバム ID: ${id}`}</h1>
+            <div className="flex flex-wrap items-start gap-2 min-w-0 border-b border-gray-200/70 dark:border-gray-700/70 pb-2">
+              <h1 className="text-xl sm:text-2xl font-bold break-words min-w-0">{album?.title ?? `アルバム ID: ${id}`}</h1>
               <div className="inline-flex items-center gap-1 shrink-0">
-                <div className="inline-flex items-center rounded border border-gray-300 dark:border-gray-600 px-2 py-1 text-sm">
-                  <span>形態: {showValue(album?.edition)}</span>
-                </div>
-                {renderCopyIcon(albumTitleEditionText, 'album-title-edition', 'アルバム名+形態')}
+                {hasEdition && (
+                  <div className="inline-flex items-center rounded border border-gray-300 dark:border-gray-600 px-2 py-1 text-sm">
+                    <span>形態: {editionText}</span>
+                  </div>
+                )}
+                {renderCopyIcon(albumTitleEditionText, 'album-title-edition', albumTitleCopyLabel)}
               </div>
             </div>
 
-            <div className="grid grid-cols-[160px_minmax(0,1fr)] gap-2 items-start border-b border-gray-200/70 dark:border-gray-700/70 py-1">
+            <div className="grid grid-cols-1 sm:grid-cols-[160px_minmax(0,1fr)] gap-2 items-start border-b border-gray-200/70 dark:border-gray-700/70 py-1">
               <span className="text-left text-gray-500 dark:text-gray-300">アルバムアーティスト</span>
               <div className="inline-flex max-w-full items-start gap-2">
                 <span className="min-w-0 break-words text-left">{showValue(album?.album_artist?.name)}</span>
@@ -1072,14 +1089,14 @@ export default function AlbumDetail() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              <div className="grid grid-cols-[160px_minmax(0,1fr)] gap-2 items-start border-b border-gray-200/70 dark:border-gray-700/70 py-1">
+              <div className="grid grid-cols-1 sm:grid-cols-[160px_minmax(0,1fr)] gap-2 items-start border-b border-gray-200/70 dark:border-gray-700/70 py-1">
                 <span className="text-left text-gray-500 dark:text-gray-300">規格品番</span>
                 <div className="inline-flex max-w-full items-start gap-2">
                   <span className="min-w-0 break-words text-left">{showValue(album?.catalog_number)}</span>
                   {renderCopyIcon(copyValue(album?.catalog_number), 'album-catalog', '規格品番')}
                 </div>
               </div>
-              <div className="grid grid-cols-[160px_minmax(0,1fr)] gap-2 items-start border-b border-gray-200/70 dark:border-gray-700/70 py-1">
+              <div className="grid grid-cols-1 sm:grid-cols-[160px_minmax(0,1fr)] gap-2 items-start border-b border-gray-200/70 dark:border-gray-700/70 py-1">
                 <span className="text-left text-gray-500 dark:text-gray-300">レーベル</span>
                 <div className="inline-flex max-w-full items-start gap-2">
                   <span className="min-w-0 break-words text-left">{showValue(album?.label)}</span>
@@ -1089,14 +1106,14 @@ export default function AlbumDetail() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              <div className="grid grid-cols-[160px_minmax(0,1fr)] gap-2 items-start border-b border-gray-200/70 dark:border-gray-700/70 py-1">
+              <div className="grid grid-cols-1 sm:grid-cols-[160px_minmax(0,1fr)] gap-2 items-start border-b border-gray-200/70 dark:border-gray-700/70 py-1">
                 <span className="text-left text-gray-500 dark:text-gray-300">発売日</span>
                 <div className="inline-flex max-w-full items-start gap-2">
                   <span className="min-w-0 break-words text-left">{showValue(album?.release_date)}</span>
                   {renderCopyIcon(copyValue(album?.release_date), 'album-release-date', '発売日')}
                 </div>
               </div>
-              <div className="grid grid-cols-[160px_minmax(0,1fr)] gap-2 items-start border-b border-gray-200/70 dark:border-gray-700/70 py-1">
+              <div className="grid grid-cols-1 sm:grid-cols-[160px_minmax(0,1fr)] gap-2 items-start border-b border-gray-200/70 dark:border-gray-700/70 py-1">
                 <span className="text-left text-gray-500 dark:text-gray-300">リリース年</span>
                 <div className="inline-flex max-w-full items-start gap-2">
                   <span className="min-w-0 break-words text-left">{showValue(releaseYear)}</span>
@@ -1110,9 +1127,9 @@ export default function AlbumDetail() {
         {albumLinks.length > 0 && (
           <div className="mb-6 rounded border border-gray-200 dark:border-gray-700 p-4">
             <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">関連リンク</h2>
-            <ul className="space-y-2 text-sm">
+            <ul className="flex flex-wrap items-center gap-2 text-sm">
               {albumLinks.map((link) => (
-                <li key={link.id} className="flex flex-wrap items-center gap-2">
+                <li key={link.id} className="inline-flex items-center gap-2 rounded border border-gray-200 dark:border-gray-700 px-2 py-1">
                   <span className="inline-flex items-center rounded border border-gray-300 dark:border-gray-600 px-2 py-0.5 text-xs text-gray-600 dark:text-gray-300">
                     {albumLinkTypeLabel(link.type)}
                   </span>
@@ -1124,71 +1141,68 @@ export default function AlbumDetail() {
                   >
                     {albumLinkTitle(link)}
                   </a>
-                  {link.region && (
-                    <span className="text-xs text-gray-500 dark:text-gray-400">({link.region})</span>
-                  )}
                 </li>
               ))}
             </ul>
           </div>
         )}
 
-        {copyNotice && (
-          <div className="mb-4 text-sm text-emerald-700 dark:text-emerald-300">{copyNotice}</div>
-        )}
-
         <div className="rounded border border-gray-200 dark:border-gray-700 p-4 mb-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
             <h2 className="text-lg font-bold">このアルバム情報でタグを書き込み</h2>
-            <div className="flex flex-wrap items-center gap-2">
+            {support.supported && (
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleSelectFiles}
+                  disabled={!workerReady || isWriting}
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60"
+                >
+                  <Upload className="w-4 h-4" />
+                  ファイル選択
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSelectFolder}
+                  disabled={!workerReady || isWriting}
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-60"
+                >
+                  <Upload className="w-4 h-4" />
+                  フォルダ選択
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTagFiles([]);
+                    setTagError('');
+                    setTagMessage('');
+                    setTagProgress(0);
+                    setIsTagOptionExpanded(false);
+                  }}
+                  disabled={isWriting}
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded bg-gray-300 dark:bg-gray-700 hover:bg-gray-400 dark:hover:bg-gray-600 disabled:opacity-60"
+                >
+                  <RotateCcw className="w-4 h-4" />
+                  リセット
+                </button>
+              </div>
+            )}
+          </div>
+
+          {support.supported && (
+            <div className="mt-3 flex flex-wrap items-center gap-3">
               <button
                 type="button"
-                onClick={handleSelectFiles}
-                disabled={!support.supported || !workerReady || isWriting}
-                className="inline-flex items-center gap-2 px-3 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60"
-              >
-                <Upload className="w-4 h-4" />
-                ファイル選択
-              </button>
-              <button
-                type="button"
-                onClick={handleSelectFolder}
-                disabled={!support.supported || !workerReady || isWriting}
-                className="inline-flex items-center gap-2 px-3 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-60"
-              >
-                <Upload className="w-4 h-4" />
-                フォルダ選択
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setTagFiles([]);
-                  setTagError('');
-                  setTagMessage('');
-                  setTagProgress(0);
-                  setIsTagOptionExpanded(false);
-                }}
+                onClick={() => setIsTagOptionExpanded((prev) => !prev)}
                 disabled={isWriting}
-                className="inline-flex items-center gap-2 px-3 py-2 rounded bg-gray-300 dark:bg-gray-700 hover:bg-gray-400 dark:hover:bg-gray-600 disabled:opacity-60"
+                className="inline-flex items-center rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700 disabled:opacity-60"
               >
-                <RotateCcw className="w-4 h-4" />
-                リセット
+                {shouldShowTagOptionDetails ? '▲ 詳細設定を閉じる' : '▼ 詳細設定を開く'}
               </button>
             </div>
-          </div>
+          )}
 
-          <div className="mt-3 flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setIsTagOptionExpanded((prev) => !prev)}
-              disabled={isWriting}
-              className="inline-flex items-center rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700 disabled:opacity-60"
-            >
-              {shouldShowTagOptionDetails ? '▲ 詳細設定を閉じる' : '▼ 詳細設定を開く'}
-            </button>
-          </div>
-
-          {shouldShowTagOptionDetails && (
+          {support.supported && shouldShowTagOptionDetails && (
             <>
               <div className="mt-3 flex flex-col items-start gap-2">
                 <label className="flex items-center gap-2 text-sm">
@@ -1251,7 +1265,7 @@ export default function AlbumDetail() {
             </div>
           )}
 
-          {tagFiles.length > 0 && (
+          {support.supported && tagFiles.length > 0 && (
             <div className="mt-4">
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse text-sm">

@@ -1,8 +1,9 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom';
+import { Moon, Sun } from 'lucide-react';
 import { buildApiUrl } from '../api/baseUrl';
 
-export default function ArtistTracks() {
+export default function ArtistTracks({ isDarkMode = false, onToggleTheme = () => {} }) {
   const { id } = useParams(); // artist id
   const [searchParams] = useSearchParams();
   const role = searchParams.get('role') || '';
@@ -40,6 +41,8 @@ export default function ArtistTracks() {
 
   const tracks = data?.tracks?.data ?? [];
   const artistName = data?.artist?.name ?? `Artist ID: ${id}`;
+  const themeLabel = isDarkMode ? 'ライト' : 'ダーク';
+  const themeTitle = isDarkMode ? 'ライトモードに切り替え' : 'ダークモードに切り替え';
 
   const roleLabel = (r) => {
     if (r === 'vocal') return '歌唱';
@@ -50,9 +53,9 @@ export default function ArtistTracks() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 p-6 text-gray-900 dark:text-gray-100">
-      <div className="max-w-5xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-        <div className="flex items-start justify-between gap-4">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-3 pb-6 pt-4 sm:p-6 text-gray-900 dark:text-gray-100">
+      <div className="max-w-5xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold">{artistName} の関連楽曲</h1>
             {role && (
@@ -62,12 +65,24 @@ export default function ArtistTracks() {
             )}
           </div>
 
-          <button
-            onClick={() => navigate(-1)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            戻る
-          </button>
+          <div className="flex items-center gap-2 self-start">
+            <button
+              type="button"
+              onClick={onToggleTheme}
+              className="inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-700 shadow hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700"
+              title={themeTitle}
+              aria-label={themeTitle}
+            >
+              {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+              <span>{themeLabel}</span>
+            </button>
+            <button
+              onClick={() => navigate(-1)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              戻る
+            </button>
+          </div>
         </div>
 
         {loading && (

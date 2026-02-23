@@ -6,7 +6,7 @@ import AlbumDetail from './pages/AlbumDetail';
 import ArtistTracks from './pages/ArtistTracks';
 import TrackSearch from './pages/TrackSearch';
 
-const TOP_RELEASE_LIMIT = 5;
+const TOP_RELEASE_LIMIT = 10;
 const THEME_STORAGE_KEY = 'theme-preference';
 
 function App() {
@@ -248,34 +248,37 @@ function App() {
     });
   };
 
+  const themeLabel = isDarkMode ? 'ライト' : 'ダーク';
+  const themeTitle = isDarkMode ? 'ライトモードに切り替え' : 'ダークモードに切り替え';
+
   return (
     <>
-      <button
-        type="button"
-        onClick={toggleTheme}
-        className="fixed top-3 right-3 z-50 inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white/90 px-3 py-1.5 text-xs text-gray-700 shadow backdrop-blur hover:bg-white dark:border-gray-600 dark:bg-gray-800/90 dark:text-gray-100 dark:hover:bg-gray-800"
-        title={isDarkMode ? 'ライトモードに切り替え' : 'ダークモードに切り替え'}
-        aria-label={isDarkMode ? 'ライトモードに切り替え' : 'ダークモードに切り替え'}
-      >
-        {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
-        <span>{isDarkMode ? 'ライト' : 'ダーク'}</span>
-      </button>
-
       <Routes>
         <Route
           path="/"
           element={
-            <div className="min-h-screen bg-gray-100 text-gray-900 dark:bg-gray-900 dark:text-gray-100 p-6">
-              <div className="max-w-5xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <div className="flex items-center justify-between gap-4 mb-6">
+            <div className="min-h-screen bg-gray-100 text-gray-900 dark:bg-gray-900 dark:text-gray-100 px-3 pb-6 pt-4 sm:p-6">
+              <div className="max-w-5xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                   <h1 className="text-2xl font-bold">CD情報検索</h1>
-
-                  <Link
-                    to="/tracks"
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                  >
-                    曲検索へ
-                  </Link>
+                  <div className="flex items-center gap-2 self-start sm:self-auto">
+                    <button
+                      type="button"
+                      onClick={toggleTheme}
+                      className="inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-700 shadow hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700"
+                      title={themeTitle}
+                      aria-label={themeTitle}
+                    >
+                      {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+                      <span>{themeLabel}</span>
+                    </button>
+                    <Link
+                      to="/tracks"
+                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    >
+                      曲検索へ
+                    </Link>
+                  </div>
                 </div>
 
                 <form
@@ -459,9 +462,18 @@ function App() {
           }
         />
 
-        <Route path="/albums/:id" element={<AlbumDetail />} />
-        <Route path="/artists/:id/tracks" element={<ArtistTracks />} />
-        <Route path="/tracks" element={<TrackSearch />} />
+        <Route
+          path="/albums/:id"
+          element={<AlbumDetail isDarkMode={isDarkMode} onToggleTheme={toggleTheme} />}
+        />
+        <Route
+          path="/artists/:id/tracks"
+          element={<ArtistTracks isDarkMode={isDarkMode} onToggleTheme={toggleTheme} />}
+        />
+        <Route
+          path="/tracks"
+          element={<TrackSearch isDarkMode={isDarkMode} onToggleTheme={toggleTheme} />}
+        />
       </Routes>
     </>
   );

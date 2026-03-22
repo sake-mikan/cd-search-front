@@ -1,7 +1,9 @@
-﻿import { buildApiUrl } from "../api/baseUrl";
+import { buildApiUrl } from "../api/baseUrl";
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Moon, Sun } from 'lucide-react';
+import SiteFooter from '../components/SiteFooter';
+import { getAlbumRoutePath } from '../utils/albumPublicId';
 
 
 function roleLabel(role) {
@@ -147,7 +149,17 @@ export default function TrackSearch({ isDarkMode = false, onToggleTheme = () => 
   const themeTitle = isDarkMode ? 'ライトモードに切り替え' : 'ダークモードに切り替え';
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-3 pb-6 pt-4 sm:p-6 text-gray-900 dark:text-gray-100">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-3 pb-6 pt-4 sm:p-6 text-gray-900 dark:text-gray-100 relative">
+      <button
+        type="button"
+        onClick={onToggleTheme}
+        className="absolute right-3 top-4 z-10 hidden lg:inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-700 shadow hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700 sm:right-6 sm:top-6"
+        title={themeTitle}
+        aria-label={themeTitle}
+      >
+        {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+        <span>{themeLabel}</span>
+      </button>
       <div className="max-w-6xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <h1 className="text-2xl font-bold">曲検索</h1>
@@ -155,7 +167,7 @@ export default function TrackSearch({ isDarkMode = false, onToggleTheme = () => 
             <button
               type="button"
               onClick={onToggleTheme}
-              className="inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-700 shadow hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700"
+              className="inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-700 shadow hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700 lg:hidden"
               title={themeTitle}
               aria-label={themeTitle}
             >
@@ -254,7 +266,7 @@ export default function TrackSearch({ isDarkMode = false, onToggleTheme = () => 
                         <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
                           {t.album?.id ? (
                             <Link
-                              to={`/albums/${t.album.id}`}
+                              to={getAlbumRoutePath(t.album)}
                               className="text-blue-600 dark:text-sky-400 hover:underline underline-offset-4"
                             >
                               {t.album.title}
@@ -337,6 +349,7 @@ export default function TrackSearch({ isDarkMode = false, onToggleTheme = () => 
           </>
         )}
       </div>
+      <SiteFooter />
     </div>
   );
 }

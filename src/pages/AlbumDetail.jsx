@@ -2,6 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Check, Copy, Loader2, Moon, RotateCcw, Sun, Upload, WandSparkles } from 'lucide-react';
 import { buildApiUrl } from "../api/baseUrl";
+import SiteFooter from "../components/SiteFooter";
+import { formatInfoTimestamp } from "../utils/formatDateTime";
+import { getAlbumRouteId, getAlbumRoutePath } from "../utils/albumPublicId";
 
 const MAX_ARTWORK_BYTES = 2 * 1024 * 1024;
 
@@ -61,6 +64,15 @@ function releaseYearText(album) {
   if (album?.release_year != null && album.release_year !== '') return String(album.release_year);
   const m = String(album?.release_date ?? '').match(/^(\d{4})/);
   return m ? m[1] : '';
+}
+
+function formatReleaseDateDisplay(value) {
+  const text = String(value ?? '').trim();
+  if (text === '') return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+    return text.replace(/-/g, '/');
+  }
+  return text;
 }
 
 function extractTrackNoFromFilename(name) {
@@ -138,7 +150,27 @@ function albumLinkTitle(link) {
   return String(link?.url ?? '');
 }
 
-function buildTagPayload(album, track, releaseYear, trackTotalByDisk, discTotal) {
+function albumEditionOptionLabel(variant) {
+  const edition = copyValue(variant?.edition);
+  const catalog = copyValue(variant?.catalog_number);
+  if (edition !== '' && edition !== '-') {
+    return catalog !== '' ? `${edition} (${catalog})` : edition;
+  }
+  return catalog !== '' ? `形態なし (${catalog})` : '形態なし';
+}
+
+function buildAlbumTitleWithEdition(album, includeEdition = false) {
+  const title = copyValue(album?.title);
+  const edition = copyValue(album?.edition);
+  const shouldIncludeEdition = includeEdition && edition !== '' && edition !== '-';
+
+  if (title && shouldIncludeEdition) return `${title} [${edition}]`;
+  if (title) return title;
+  if (shouldIncludeEdition) return `[${edition}]`;
+  return '';
+}
+
+function buildTagPayload(album, track, releaseYear, trackTotalByDisk, discTotal, albumTitle = '') {
   const credits = track?.credits ?? {};
   const trackNo = Number(track?.track_number ?? 0);
   const discNo = Number(track?.disk_number ?? 1);
@@ -148,7 +180,7 @@ function buildTagPayload(album, track, releaseYear, trackTotalByDisk, discTotal)
   return {
     title: String(track?.title ?? ''),
     artist: toPeopleText(credits?.vocal) || String(album?.album_artist?.name ?? ''),
-    album: String(album?.title ?? ''),
+    album: albumTitle || String(album?.title ?? ''),
     albumArtist: String(album?.album_artist?.name ?? ''),
     track: trackNo > 0 ? String(trackNo) : '',
     trackTotal:
@@ -222,7 +254,7 @@ function sanitizeFileName(name) {
   return filtered.replace(/[. ]+$/g, '').trim();
 }
 
-function buildRenameContext(album, track, releaseYear) {
+function buildRenameContext(album, track, releaseYear, albumTitle = '') {
   const credits = track?.credits ?? {};
   return {
     track: Number(track?.track_number ?? 0) || '',
@@ -232,7 +264,7 @@ function buildRenameContext(album, track, releaseYear) {
     lyricist: toPeopleText(credits?.lyricist),
     composer: toPeopleText(credits?.composer),
     arranger: toPeopleText(credits?.arranger),
-    album: album?.title ?? '',
+    album: albumTitle || (album?.title ?? ''),
     album_artist: album?.album_artist?.name ?? '',
     year: releaseYear ?? '',
     release_date: album?.release_date ?? '',
@@ -302,6 +334,7 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
   const [isWriting, setIsWriting] = useState(false);
   const [embedCover, setEmbedCover] = useState(false);
   const [renameOnWrite, setRenameOnWrite] = useState(false);
+  const [includeEditionInAlbumName, setIncludeEditionInAlbumName] = useState(false);
   const [renamePattern, setRenamePattern] = useState('$num(%track%,2) %title%');
   const [isTagOptionExpanded, setIsTagOptionExpanded] = useState(false);
 
@@ -371,13 +404,24 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
     load();
   }, [apiUrl]);
 
+  const canonicalAlbumId = useMemo(() => getAlbumRouteId(album, id), [album, id]);
+
+  useEffect(() => {
+    if (!album?.public_id) return;
+    if (!/^\d+$/.test(String(id ?? '').trim())) return;
+    if (String(id) === String(album.public_id)) return;
+    navigate(getAlbumRoutePath(album, id), { replace: true });
+  }, [album, id, navigate]);
+
   useEffect(() => {
     setTagFiles([]);
     setTagError('');
     setTagMessage('');
     setTagProgress(0);
     setIsWriting(false);
-    setRenameOnWrite(false);
+    setEmbedCover(false);
+    setRenameOnWrite(true);
+    setIncludeEditionInAlbumName(false);
     setIsTagOptionExpanded(false);
     setCopiedToken('');
   }, [id]);
@@ -430,16 +474,71 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
   const orderedTracks = useMemo(() => normalizeTracks(album?.tracks), [album?.tracks]);
   const releaseYear = useMemo(() => releaseYearText(album), [album]);
   const albumLinks = useMemo(() => {
-    const links = Array.isArray(album?.links) ? album.links.slice() : [];
-    return links.sort((a, b) => {
-      const aType = String(a?.type ?? '').toLowerCase();
-      const bType = String(b?.type ?? '').toLowerCase();
-      const aRank = aType === 'official' ? 0 : 1;
-      const bRank = bType === 'official' ? 0 : 1;
-      if (aRank !== bRank) return aRank - bRank;
-      return aType.localeCompare(bType, 'ja');
-    });
-  }, [album?.links]);
+    const rawLinks = Array.isArray(album?.links)
+      ? album.links
+      : Array.isArray(album?.album_links)
+      ? album.album_links
+      : Array.isArray(album?.albumLinks)
+      ? album.albumLinks
+      : Array.isArray(album?.related_links)
+      ? album.related_links
+      : [];
+
+    return rawLinks
+      .map((link, index) => ({
+        id: link?.id ?? `album-link-${index}-${String(link?.url ?? '').trim()}`,
+        type: link?.type ?? '',
+        provider: link?.provider ?? '',
+        title: link?.title ?? '',
+        url: String(link?.url ?? '').trim(),
+      }))
+      .filter((link) => link.url !== '' || albumLinkTitle(link).trim() !== '')
+      .sort((a, b) => {
+        const aType = String(a?.type ?? '').toLowerCase();
+        const bType = String(b?.type ?? '').toLowerCase();
+        const aRank = aType === 'official' ? 0 : 1;
+        const bRank = bType === 'official' ? 0 : 1;
+        if (aRank !== bRank) return aRank - bRank;
+        return aType.localeCompare(bType, 'ja');
+      });
+  }, [album]);
+
+  const editionVariants = useMemo(() => {
+    const list = Array.isArray(album?.edition_variants) ? album.edition_variants : [];
+    return list
+      .map((variant) => ({
+        id: Number(variant?.id ?? 0),
+        public_id: String(variant?.public_id ?? '').trim(),
+        edition: variant?.edition ?? '',
+        catalog_number: variant?.catalog_number ?? '',
+        release_date: variant?.release_date ?? '',
+      }))
+      .filter((variant) => Number.isFinite(variant.id) && variant.id > 0)
+      .sort((a, b) => {
+        const aEdition = copyValue(a.edition);
+        const bEdition = copyValue(b.edition);
+        const aBlank = aEdition === '' || aEdition === '-';
+        const bBlank = bEdition === '' || bEdition === '-';
+        if (aBlank !== bBlank) return aBlank ? 1 : -1;
+        return aEdition.localeCompare(bEdition, 'ja');
+      });
+  }, [album?.edition_variants]);
+
+  const selectedEditionAlbumId = useMemo(() => {
+    const hasCurrent = editionVariants.some((variant) => getAlbumRouteId(variant) === canonicalAlbumId);
+    if (hasCurrent) return canonicalAlbumId;
+    const first = editionVariants[0];
+    return first ? getAlbumRouteId(first) : '';
+  }, [canonicalAlbumId, editionVariants]);
+
+  const handleEditionChange = useCallback(
+    (event) => {
+      const nextId = String(event.target.value ?? '').trim();
+      if (nextId === '' || nextId === canonicalAlbumId) return;
+      navigate(`/albums/${nextId}`);
+    },
+    [canonicalAlbumId, navigate]
+  );
 
   const trackTotalByDisk = useMemo(() => {
     const map = {};
@@ -542,6 +641,28 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
 
   const editionText = useMemo(() => copyValue(album?.edition), [album?.edition]);
   const hasEdition = editionText !== '' && editionText !== '-';
+  const hasCoverImage = Boolean(album?.cover_image_url);
+  const coverCopyrightText = useMemo(() => {
+    const label = copyValue(album?.label);
+    return hasCoverImage && label !== '' ? '(C) ' + label : '';
+  }, [album?.label, hasCoverImage]);
+  const hasMultipleEditionVariants = editionVariants.length > 1;
+  const seriesName = useMemo(() => String(album?.series?.name ?? '').trim(), [album?.series?.name]);
+  const shouldShowSeries = Boolean(album?.series?.id) && seriesName !== '';
+  const shouldShowEditionInAlbumNameOption = hasEdition;
+  const albumTitleForTags = useMemo(
+    () => buildAlbumTitleWithEdition(album, includeEditionInAlbumName),
+    [album, includeEditionInAlbumName]
+  );
+
+  useEffect(() => {
+    if (!album?.id) return;
+    setEmbedCover(hasCoverImage);
+    setRenameOnWrite(true);
+    setIncludeEditionInAlbumName(hasEdition && !hasMultipleEditionVariants);
+  }, [album?.id, hasCoverImage, hasEdition, hasMultipleEditionVariants]);
+
+  const albumTitleText = useMemo(() => copyValue(album?.title), [album?.title]);
 
   const albumTitleEditionText = useMemo(() => {
     const title = copyValue(album?.title);
@@ -551,43 +672,8 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
     return '';
   }, [album?.title, editionText, hasEdition]);
 
-  const albumTitleCopyLabel = hasEdition ? 'アルバム名+形態' : 'アルバム名';
 
-  const allDisplayText = useMemo(() => {
-    if (!album) return '';
-    const lines = [
-      `アルバム: ${showValue(album.title)}`,
-      `アルバムアーティスト: ${showValue(album?.album_artist?.name)}`,
-      `規格品番: ${showValue(album.catalog_number)}`,
-      `レーベル: ${showValue(album.label)}`,
-      `発売日: ${showValue(album.release_date)}`,
-      `リリース年: ${showValue(releaseYear)}`,
-      '',
-      'Disc\tTr\t曲名\tアーティスト\t作詞\t作曲\t編曲\tジャンル\t時間\tコメント',
-    ];
-    if (hasEdition) {
-      lines.splice(3, 0, `形態: ${editionText}`);
-    }
-    for (const track of orderedTracks) {
-      lines.push(
-        [
-          showValue(track?.disk_number, ''),
-          showValue(track?.track_number, ''),
-          showValue(track?.title, ''),
-          toPeopleText(track?.credits?.vocal),
-          toPeopleText(track?.credits?.lyricist),
-          toPeopleText(track?.credits?.composer),
-          toPeopleText(track?.credits?.arranger),
-          showValue(track?.genre, ''),
-          showValue(track?.duration, ''),
-          showValue(track?.comment, ''),
-        ].join('\t')
-      );
-    }
-    return lines.join('\n');
-  }, [album, editionText, hasEdition, orderedTracks, releaseYear]);
-
-  const renderCopyIcon = (text, token, label) => {
+  const renderCopyIcon = (text, token, label, tooltip = `${label}をコピー`) => {
     const copied = copiedToken === token;
     return (
       <button
@@ -595,14 +681,13 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
         disabled={!text}
         onClick={() => writeClipboard(text, token)}
         className="inline-flex h-7 w-7 items-center justify-center rounded border border-gray-300 text-gray-500 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-40 disabled:cursor-not-allowed dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white"
-        title={`${label}をコピー`}
-        aria-label={`${label}をコピー`}
+        title={tooltip}
+        aria-label={tooltip}
       >
         {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
       </button>
     );
   };
-
   const renderTrackField = (value, token, label) => {
     const text = showValue(value);
     const clip = text === '-' ? '' : text;
@@ -618,8 +703,8 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
     const list = toPeopleList(value);
     const text = list.map((x) => x.name).join(', ');
     return (
-      <div className="flex items-start justify-between gap-2">
-        <span className="break-words">
+      <div className="inline-flex max-w-full items-start gap-2">
+        <span className="min-w-0 break-words text-left">
           {list.length === 0 && '-'}
           {list.map((person, idx) => (
             <span key={`${token}-${person.id ?? 'text'}-${idx}`}>
@@ -780,6 +865,7 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
     setTagProgress(0);
     setIsWriting(true);
     const outputAlbumFolderName = sanitizeFileName(copyValue(album?.title)) || `album-${id}`;
+    const albumTitleForWrite = albumTitleForTags || copyValue(album?.title);
 
     const singleFileSavePlans = new Map();
     if (renameOnWrite) {
@@ -796,7 +882,7 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
           const track = orderedTracks.find((t) => String(t.id) === String(row.trackId));
           if (!track) continue;
 
-          const context = buildRenameContext(album, track, releaseYear);
+          const context = buildRenameContext(album, track, releaseYear, albumTitleForWrite);
           const rendered = renderRenameTemplate(renamePattern, context);
           const sanitized = sanitizeFileName(rendered);
           if (!sanitized) {
@@ -883,7 +969,7 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
         }
         const file = await row.handle.getFile();
         const fileBuffer = await file.arrayBuffer();
-        const tags = buildTagPayload(album, track, releaseYear, trackTotalByDisk, discTotal);
+        const tags = buildTagPayload(album, track, releaseYear, trackTotalByDisk, discTotal, albumTitleForWrite);
         const result = await callWorker(
           'WRITE_TAGS',
           { fileBytes: fileBuffer, fileName: file.name, tags, artwork: artwork ? { mimeType: artwork.mimeType, bytes: artwork.bytes.slice() } : null },
@@ -909,7 +995,7 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
 
           let desiredOutputName = row.name;
           if (renameOnWrite) {
-            const context = buildRenameContext(album, track, releaseYear);
+            const context = buildRenameContext(album, track, releaseYear, albumTitleForWrite);
             const rendered = renderRenameTemplate(renamePattern, context);
             const sanitized = sanitizeFileName(rendered);
 
@@ -947,7 +1033,7 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
             : `${outputAlbumFolderName}/${targetName}`;
           outputLocationMessage = ` / 出力先: ${outputRelativePath}`;
         } else if (renameOnWrite) {
-          const context = buildRenameContext(album, track, releaseYear);
+          const context = buildRenameContext(album, track, releaseYear, albumTitleForWrite);
           const rendered = renderRenameTemplate(renamePattern, context);
           const sanitized = sanitizeFileName(rendered);
 
@@ -1018,10 +1104,30 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
 
   const themeLabel = isDarkMode ? 'ライト' : 'ダーク';
   const themeTitle = isDarkMode ? 'ライトモードに切り替え' : 'ダークモードに切り替え';
+  const albumArtistName = String(album?.album_artist?.name ?? '').trim();
+  const unitMembers = useMemo(() => toPeopleList(album?.album_artist_members), [album?.album_artist_members]);
+  const shouldLinkAlbumArtist =
+    Boolean(album?.album_artist?.id) && albumArtistName.toLowerCase() !== 'various artists';
+  const shouldShowUnitMembers = unitMembers.length > 0;
+  const shouldShowRelatedLinks = Boolean(album) && !loading && !error;
+  const informationUpdatedAtText = useMemo(
+    () => formatInfoTimestamp(album?.information_updated_at),
+    [album?.information_updated_at]
+  );
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-3 pb-6 pt-4 sm:p-6 text-gray-900 dark:text-gray-100">
-      <div className="max-w-7xl mx-auto mb-3 flex items-center justify-between gap-2">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-3 pb-6 pt-4 sm:p-6 text-gray-900 dark:text-gray-100 relative">
+      <button
+        type="button"
+        onClick={onToggleTheme}
+        className="absolute right-3 top-4 z-10 hidden lg:inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-700 shadow hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700 sm:right-6 sm:top-6"
+        title={themeTitle}
+        aria-label={themeTitle}
+      >
+        {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+        <span>{themeLabel}</span>
+      </button>
+      <div className="max-w-7xl mx-auto mb-3 flex items-center justify-between gap-2 lg:justify-start">
         <button
           type="button"
           onClick={() => navigate('/')}
@@ -1032,7 +1138,7 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
         <button
           type="button"
           onClick={onToggleTheme}
-          className="inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-700 shadow hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700"
+          className="inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-700 shadow hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700 lg:hidden"
           title={themeTitle}
           aria-label={themeTitle}
         >
@@ -1042,58 +1148,84 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
       </div>
 
       <div className="max-w-7xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow p-4 sm:p-6">
-        <div className="hidden">
-          <button
-            type="button"
-            onClick={() => writeClipboard(allDisplayText, 'all')}
-            disabled={!allDisplayText}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded bg-gray-200 text-gray-800 hover:bg-gray-300 disabled:opacity-60 dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600"
-          >
-            <Copy className="w-4 h-4" />
-            表示データをコピー
-          </button>
-        </div>
-
         <div className="grid grid-cols-1 lg:grid-cols-[256px_1fr] gap-5 mb-6 items-start">
-          <div className="w-40 h-40 sm:w-56 sm:h-56 lg:w-64 lg:h-64 rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-            {album?.cover_image_url ? (
-              <img
-                src={album.cover_image_url}
-                alt={album.title ?? 'album cover'}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <span className="text-xs text-gray-500 dark:text-gray-300">No Image</span>
+          <div className="w-40 sm:w-56 lg:w-64">
+            <div className="w-40 h-40 sm:w-56 sm:h-56 lg:w-64 lg:h-64 rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+              {album?.cover_image_url ? (
+                <img
+                  src={album.cover_image_url}
+                  alt={album.title ?? 'album cover'}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span className="text-xs text-gray-500 dark:text-gray-300">No Image</span>
+              )}
+            </div>
+            {coverCopyrightText && (
+              <p className="mt-1 text-[10px] leading-tight text-gray-400 dark:text-gray-500">{coverCopyrightText}</p>
             )}
           </div>
 
           <div className="space-y-2 text-sm text-gray-700 dark:text-gray-200">
             <div className="flex flex-wrap items-start gap-2 min-w-0 border-b border-gray-200/70 dark:border-gray-700/70 pb-2">
               <h1 className="text-xl sm:text-2xl font-bold break-words min-w-0">{album?.title ?? `アルバム ID: ${id}`}</h1>
-              <div className="inline-flex items-center gap-1 shrink-0">
-                {hasEdition && (
-                  <div className="inline-flex items-center rounded border border-gray-300 dark:border-gray-600 px-2 py-1 text-sm">
-                    <span>形態: {editionText}</span>
-                  </div>
-                )}
-                {renderCopyIcon(albumTitleEditionText, 'album-title-edition', albumTitleCopyLabel)}
+              <div className="inline-flex items-center gap-2 shrink-0 flex-wrap">
+                {hasEdition &&
+                  (editionVariants.length > 1 ? (
+                    <label className="inline-flex items-center text-sm shrink-0">
+                      <select
+                        value={selectedEditionAlbumId}
+                        onChange={handleEditionChange}
+                        className="rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-2 py-1 text-sm"
+                      >
+                        {editionVariants.map((variant) => (
+                          <option key={variant.public_id || variant.id} value={getAlbumRouteId(variant)}>
+                            {albumEditionOptionLabel(variant)}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  ) : (
+                    <span className="text-sm shrink-0">{editionText}</span>
+                  ))}
+                {renderCopyIcon(albumTitleText, 'album-title', 'アルバム名', 'アルバム名をコピー')}
+                {hasEdition && renderCopyIcon(albumTitleEditionText, 'album-title-edition', 'アルバム名+形態', 'アルバム名+形態をコピー')}
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-[160px_minmax(0,1fr)] gap-2 items-start border-b border-gray-200/70 dark:border-gray-700/70 py-1">
               <span className="text-left text-gray-500 dark:text-gray-300">アルバムアーティスト</span>
               <div className="inline-flex max-w-full items-start gap-2">
-                <span className="min-w-0 break-words text-left">{showValue(album?.album_artist?.name)}</span>
+                {shouldLinkAlbumArtist ? (
+                  <Link
+                    to={`/artists/${album.album_artist.id}/albums`}
+                    className="min-w-0 break-words text-left text-blue-600 dark:text-sky-400 hover:underline underline-offset-4"
+                  >
+                    {showValue(albumArtistName)}
+                  </Link>
+                ) : (
+                  <span className="min-w-0 break-words text-left">{showValue(albumArtistName)}</span>
+                )}
                 {renderCopyIcon(copyValue(album?.album_artist?.name), 'album-artist', 'アルバムアーティスト')}
               </div>
             </div>
 
+            {shouldShowUnitMembers && (
+              <div className="grid grid-cols-1 sm:grid-cols-[160px_minmax(0,1fr)] gap-2 items-start border-b border-gray-200/70 dark:border-gray-700/70 py-1">
+                <span className="text-left text-gray-500 dark:text-gray-300">ユニットメンバー</span>
+                {renderLinkedPeopleField(unitMembers, 'album-unit-members', 'ユニットメンバー', 'vocal')}
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               <div className="grid grid-cols-1 sm:grid-cols-[160px_minmax(0,1fr)] gap-2 items-start border-b border-gray-200/70 dark:border-gray-700/70 py-1">
-                <span className="text-left text-gray-500 dark:text-gray-300">規格品番</span>
-                <div className="inline-flex max-w-full items-start gap-2">
-                  <span className="min-w-0 break-words text-left">{showValue(album?.catalog_number)}</span>
-                  {renderCopyIcon(copyValue(album?.catalog_number), 'album-catalog', '規格品番')}
+                <span className="text-left text-gray-500 dark:text-gray-300">発売日</span>
+                <div className="inline-flex max-w-full items-start gap-2 flex-wrap">
+                  <span className="min-w-0 break-words text-left">{showValue(formatReleaseDateDisplay(album?.release_date))}</span>
+                  <div className="inline-flex items-center gap-2 flex-wrap">
+                    {renderCopyIcon(copyValue(album?.release_date), 'album-release-date', '発売日', '発売日をコピー')}
+                    {renderCopyIcon(copyValue(releaseYear), 'album-release-year', 'リリース年', 'リリース年のみコピー')}
+                  </div>
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-[160px_minmax(0,1fr)] gap-2 items-start border-b border-gray-200/70 dark:border-gray-700/70 py-1">
@@ -1107,45 +1239,70 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               <div className="grid grid-cols-1 sm:grid-cols-[160px_minmax(0,1fr)] gap-2 items-start border-b border-gray-200/70 dark:border-gray-700/70 py-1">
-                <span className="text-left text-gray-500 dark:text-gray-300">発売日</span>
+                <span className="text-left text-gray-500 dark:text-gray-300">規格品番</span>
                 <div className="inline-flex max-w-full items-start gap-2">
-                  <span className="min-w-0 break-words text-left">{showValue(album?.release_date)}</span>
-                  {renderCopyIcon(copyValue(album?.release_date), 'album-release-date', '発売日')}
+                  <span className="min-w-0 break-words text-left">{showValue(album?.catalog_number)}</span>
+                  {renderCopyIcon(copyValue(album?.catalog_number), 'album-catalog', '規格品番')}
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-[160px_minmax(0,1fr)] gap-2 items-start border-b border-gray-200/70 dark:border-gray-700/70 py-1">
-                <span className="text-left text-gray-500 dark:text-gray-300">リリース年</span>
+                <span className="text-left text-gray-500 dark:text-gray-300">JAN</span>
                 <div className="inline-flex max-w-full items-start gap-2">
-                  <span className="min-w-0 break-words text-left">{showValue(releaseYear)}</span>
-                  {renderCopyIcon(copyValue(releaseYear), 'album-release-year', 'リリース年')}
+                  <span className="min-w-0 break-words text-left">{showValue(album?.jan)}</span>
+                  {renderCopyIcon(copyValue(album?.jan), 'album-jan', 'JAN')}
                 </div>
               </div>
             </div>
+            {shouldShowSeries && (
+              <div className="grid grid-cols-1 sm:grid-cols-[160px_minmax(0,1fr)] gap-2 items-start border-b border-gray-200/70 dark:border-gray-700/70 py-1">
+                <span className="text-left text-gray-500 dark:text-gray-300">シリーズ</span>
+                <div className="inline-flex max-w-full items-start gap-2">
+                  <Link
+                    to={`/series/${album.series.id}/albums`}
+                    className="min-w-0 break-words text-left text-blue-600 dark:text-sky-400 hover:underline underline-offset-4"
+                  >
+                    {showValue(seriesName)}
+                  </Link>
+                  {renderCopyIcon(copyValue(seriesName), 'album-series', 'シリーズ')}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
-        {albumLinks.length > 0 && (
+        {shouldShowRelatedLinks && (
           <div className="mb-6 rounded border border-gray-200 dark:border-gray-700 p-4">
-            <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">関連リンク</h2>
-            <ul className="flex flex-wrap items-center gap-2 text-sm">
-              {albumLinks.map((link) => (
-                <li key={link.id} className="inline-flex items-center gap-2 rounded border border-gray-200 dark:border-gray-700 px-2 py-1">
-                  <span className="inline-flex items-center rounded border border-gray-300 dark:border-gray-600 px-2 py-0.5 text-xs text-gray-600 dark:text-gray-300">
-                    {albumLinkTypeLabel(link.type)}
-                  </span>
-                  <a
-                    href={link.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-blue-600 dark:text-sky-400 hover:underline break-all"
-                  >
-                    {albumLinkTitle(link)}
-                  </a>
-                </li>
-              ))}
-            </ul>
+            <div className="flex flex-wrap items-start gap-3">
+              <h2 className="shrink-0 pt-1 text-sm font-semibold text-gray-700 dark:text-gray-200">関連リンク</h2>
+              {albumLinks.length > 0 ? (
+                <ul className="flex min-w-0 flex-1 flex-wrap items-center gap-2 text-sm">
+                  {albumLinks.map((link) => (
+                    <li key={link.id} className="inline-flex items-center gap-2 rounded border border-gray-200 dark:border-gray-700 px-2 py-1">
+                      <span className="inline-flex items-center rounded border border-gray-300 dark:border-gray-600 px-2 py-0.5 text-xs text-gray-600 dark:text-gray-300">
+                        {albumLinkTypeLabel(link.type)}
+                      </span>
+                      {link.url ? (
+                        <a
+                          href={link.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-blue-600 dark:text-sky-400 hover:underline break-all"
+                        >
+                          {albumLinkTitle(link)}
+                        </a>
+                      ) : (
+                        <span className="break-all text-gray-700 dark:text-gray-200">{albumLinkTitle(link)}</span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="min-w-0 flex-1 pt-1 text-sm text-gray-500 dark:text-gray-300">関連リンクはありません。</div>
+              )}
+            </div>
           </div>
         )}
+
 
         <div className="rounded border border-gray-200 dark:border-gray-700 p-4 mb-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
@@ -1210,7 +1367,7 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
                     type="checkbox"
                     checked={embedCover}
                     onChange={(e) => setEmbedCover(e.target.checked)}
-                    disabled={!album?.cover_image_url || isWriting}
+                    disabled={!hasCoverImage || isWriting}
                   />
                   ジャケット画像を埋め込む（2MBまで）
                 </label>
@@ -1224,6 +1381,18 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
                   />
                   タグ書き込み時にファイル名をリネームする
                 </label>
+
+                {shouldShowEditionInAlbumNameOption && (
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={includeEditionInAlbumName}
+                      onChange={(e) => setIncludeEditionInAlbumName(e.target.checked)}
+                      disabled={isWriting}
+                    />
+                    アルバム名に形態を含める
+                  </label>
+                )}
 
                 <input
                   type="text"
@@ -1376,7 +1545,25 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
         {!loading && !error && discGroups.length === 0 && (
           <div className="border px-3 py-6 text-center text-gray-600 dark:text-gray-300">トラック情報がありません</div>
         )}
+
+        {!loading && !error && (
+          <div className="mt-6 rounded border border-gray-200/70 bg-gray-50/60 px-3 py-3 text-xs text-gray-600 dark:border-gray-700/70 dark:bg-gray-900/20 dark:text-gray-300">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-1">
+                <p>情報時点: {informationUpdatedAtText}</p>
+                <p>誤りや不足がある場合のみ、参考URL付きで送信してください。</p>
+              </div>
+              <Link
+                to={`/albums/${canonicalAlbumId}/correction-request`}
+                className="inline-flex items-center justify-center self-start rounded border border-gray-300/80 bg-transparent px-3 py-1.5 text-xs text-gray-600 transition hover:bg-gray-100/70 dark:border-gray-600/80 dark:text-gray-300 dark:hover:bg-gray-800/60"
+              >
+                修正依頼フォームへ
+              </Link>
+            </div>
+          </div>
+        )}
       </div>
+      <SiteFooter />
     </div>
   );
 }

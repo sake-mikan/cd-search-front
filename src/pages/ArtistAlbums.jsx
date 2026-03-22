@@ -1,58 +1,52 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Moon, Sun } from 'lucide-react';
 import { buildApiUrl } from '../api/baseUrl';
 import SiteFooter from '../components/SiteFooter';
 import { getAlbumRoutePath } from '../utils/albumPublicId';
 
-export default function ArtistTracks({ isDarkMode = false, onToggleTheme = () => {} }) {
-  const { id } = useParams(); // artist id
-  const [searchParams] = useSearchParams();
-  const role = searchParams.get('role') || '';
+function membersText(value) {
+  if (!Array.isArray(value)) return '';
+  return value
+    .map((row) => String(row?.name ?? '').trim())
+    .filter((name) => name !== '')
+    .join(', ');
+}
 
+export default function ArtistAlbums({ isDarkMode = false, onToggleTheme = () => {} }) {
+  const { id } = useParams();
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const apiUrl = useMemo(() => {
-    const qs = role ? `?role=${encodeURIComponent(role)}` : '';
-    return buildApiUrl(`/artists/${id}/tracks${qs}`);
-  }, [id, role]);
-
-  const load = async () => {
-    setLoading(true);
-    setError('');
-
-    try {
-      const res = await fetch(apiUrl, { headers: { Accept: 'application/json' } });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      setData(await res.json());
-    } catch (e) {
-      console.error(e);
-      setError('関連楽曲一覧の取得に失敗しました。');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const apiUrl = useMemo(() => buildApiUrl(`/artists/${id}/albums`), [id]);
 
   useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      setError('');
+
+      try {
+        const res = await fetch(apiUrl, { headers: { Accept: 'application/json' } });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        setData(await res.json());
+      } catch (e) {
+        console.error(e);
+        setError('アルバム一覧の取得に失敗しました。');
+      } finally {
+        setLoading(false);
+      }
+    };
+
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiUrl]);
 
-  const tracks = data?.tracks?.data ?? [];
+  const albums = Array.isArray(data?.albums) ? data.albums : [];
   const artistName = data?.artist?.name ?? `Artist ID: ${id}`;
+  const isUnit = String(data?.artist?.type ?? '') === 'unit';
   const themeLabel = isDarkMode ? 'ライト' : 'ダーク';
   const themeTitle = isDarkMode ? 'ライトモードに切り替え' : 'ダークモードに切り替え';
-
-  const roleLabel = (r) => {
-    if (r === 'vocal') return '歌唱';
-    if (r === 'lyricist') return '作詞';
-    if (r === 'composer') return '作曲';
-    if (r === 'arranger') return '編曲';
-    return '';
-  };
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-3 pb-6 pt-4 sm:p-6 text-gray-900 dark:text-gray-100 relative">
@@ -66,13 +60,14 @@ export default function ArtistTracks({ isDarkMode = false, onToggleTheme = () =>
         {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
         <span>{themeLabel}</span>
       </button>
-      <div className="max-w-5xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow p-4 sm:p-6">
+
+      <div className="max-w-6xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold">{artistName} の関連楽曲</h1>
-            {role && (
-              <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
-                絞り込み: {roleLabel(role)}（{role}）
+            <h1 className="text-2xl font-bold">{artistName} のアルバム一覧</h1>
+            {isUnit && (
+              <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                この画面では、ユニット名で登録されているアルバムと、そのアルバム時点の所属メンバーを確認できます。
               </p>
             )}
           </div>
@@ -89,6 +84,7 @@ export default function ArtistTracks({ isDarkMode = false, onToggleTheme = () =>
               <span>{themeLabel}</span>
             </button>
             <button
+              type="button"
               onClick={() => navigate(-1)}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
@@ -109,52 +105,46 @@ export default function ArtistTracks({ isDarkMode = false, onToggleTheme = () =>
 
         {!loading && !error && (
           <div className="mt-6 overflow-x-auto">
-            <table className="w-full border-collapse">
+            <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="bg-gray-200 dark:bg-gray-700">
-                  <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left">
-                    曲名
-                  </th>
-                  <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left">
-                    アルバム
-                  </th>
-                  <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left w-40">
-                    形態
-                  </th>
+                  <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left">アルバム</th>
+                  <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left w-40">規格品番</th>
+                  <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left w-32">形態</th>
+                  <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left w-32">発売日</th>
+                  <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left w-40">JAN</th>
+                  {isUnit && <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left">所属メンバー</th>}
                 </tr>
               </thead>
 
               <tbody>
-                {tracks.map((t) => (
-                  <tr key={t.id} className="hover:bg-gray-100 dark:hover:bg-gray-700">
-                    <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 font-medium">
-                      {t.title}
-                    </td>
-
+                {albums.map((album) => (
+                  <tr key={album.id} className="hover:bg-gray-100 dark:hover:bg-gray-700">
                     <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
-                      {t.album?.id ? (
-                        <Link
-                          to={getAlbumRoutePath(t.album)}
-                          className="text-blue-600 dark:text-sky-400 hover:underline underline-offset-4"
-                        >
-                          {t.album.title}
-                        </Link>
-                      ) : (
-                        <span className="text-gray-500 dark:text-gray-400">-</span>
-                      )}
+                      <Link
+                        to={getAlbumRoutePath(album)}
+                        className="text-blue-600 dark:text-sky-400 hover:underline underline-offset-4"
+                      >
+                        {album.title}
+                      </Link>
                     </td>
-
-                    <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
-                      {t.album?.edition ?? '-'}
-                    </td>
+                    <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">{album.catalog_number ?? '-'}</td>
+                    <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">{album.edition ?? '-'}</td>
+                    <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">{album.release_date ?? '-'}</td>
+                    <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">{album.jan ?? '-'}</td>
+                    {isUnit && (
+                      <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
+                        {membersText(album.unit_members) || '-'}
+                      </td>
+                    )}
                   </tr>
                 ))}
 
-                {tracks.length === 0 && (
+                {albums.length === 0 && (
                   <tr>
                     <td
                       className="border border-gray-300 dark:border-gray-600 px-3 py-6 text-center text-gray-600 dark:text-gray-300"
-                      colSpan={3}
+                      colSpan={isUnit ? 6 : 5}
                     >
                       データがありません
                     </td>

@@ -4,6 +4,7 @@ import { Moon, Sun } from 'lucide-react';
 import { buildApiUrl } from '../api/baseUrl';
 import SiteFooter from '../components/SiteFooter';
 import { getAlbumRoutePath } from '../utils/albumPublicId';
+import { getArtistRouteId } from '../utils/artistPublicId';
 
 function formatAlbumTitle(album) {
   const title = String(album?.title ?? '').trim();
@@ -31,6 +32,8 @@ export default function ArtistTracks({ isDarkMode = false, onToggleTheme = () =>
     return buildApiUrl(`/artists/${id}/tracks${qs}`);
   }, [id, role]);
 
+  const canonicalArtistId = useMemo(() => getArtistRouteId(data?.artist, id), [data?.artist, id]);
+
   const load = async () => {
     setLoading(true);
     setError('');
@@ -51,6 +54,15 @@ export default function ArtistTracks({ isDarkMode = false, onToggleTheme = () =>
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [apiUrl]);
+
+  useEffect(() => {
+    if (!data?.artist) return;
+    if (String(id ?? '').trim() === '') return;
+    if (String(id) !== String(data.artist.id ?? '')) return;
+    if (String(canonicalArtistId) === '' || String(id) === String(canonicalArtistId)) return;
+    const qs = role ? `?role=${encodeURIComponent(role)}` : '';
+    navigate(`/artists/${canonicalArtistId}/tracks${qs}`, { replace: true });
+  }, [canonicalArtistId, data?.artist, id, navigate, role]);
 
   const tracks = data?.tracks?.data ?? [];
   const artistName = data?.artist?.name ?? `Artist ID: ${id}`;

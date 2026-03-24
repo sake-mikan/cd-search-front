@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { Moon, Sun } from 'lucide-react';
 import SiteFooter from '../components/SiteFooter';
 import { getAlbumRoutePath } from '../utils/albumPublicId';
+import { getArtistTracksRoutePath } from '../utils/artistPublicId';
 
 
 function roleLabel(role) {
@@ -124,6 +125,7 @@ export default function TrackSearch({ isDarkMode = false, onToggleTheme = () => 
         normalized[role] = list
           .map((item) => ({
             id: item?.id ?? null,
+            public_id: item?.public_id ?? null,
             name: item?.name ?? '',
           }))
           .filter((item) => String(item.name).trim() !== '');
@@ -139,7 +141,7 @@ export default function TrackSearch({ isDarkMode = false, onToggleTheme = () => 
       const role = a?.pivot?.role;
       if (!role) continue;
       if (!map[role]) map[role] = [];
-      map[role].push({ id: a.id, name: a.name });
+      map[role].push({ id: a.id, public_id: a.public_id ?? null, name: a.name });
     }
     return map;
   };
@@ -295,7 +297,7 @@ export default function TrackSearch({ isDarkMode = false, onToggleTheme = () => 
                                 {list.map((a, idx) => (
                                   <span key={a.id}>
                                     <Link
-                                      to={`/artists/${a.id}/tracks?role=${encodeURIComponent(role)}`}
+                                      to={getArtistTracksRoutePath(a, role)}
                                       className="text-blue-600 dark:text-sky-400 hover:underline underline-offset-4"
                                     >
                                       {a.name}

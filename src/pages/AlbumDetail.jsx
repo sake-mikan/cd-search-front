@@ -5,6 +5,7 @@ import { buildApiUrl } from "../api/baseUrl";
 import SiteFooter from "../components/SiteFooter";
 import { formatInfoTimestamp } from "../utils/formatDateTime";
 import { getAlbumRouteId, getAlbumRoutePath } from "../utils/albumPublicId";
+import { getArtistAlbumsRoutePath, getArtistTracksRoutePath } from "../utils/artistPublicId";
 
 const MAX_ARTWORK_BYTES = 2 * 1024 * 1024;
 
@@ -54,8 +55,8 @@ function toPeopleList(value) {
   const list = Array.isArray(value) ? value : typeof value === 'object' ? Object.values(value) : [value];
   return list
     .map((x) => {
-      if (typeof x === 'string') return { id: null, name: x };
-      return { id: x?.id ?? null, name: x?.name ?? '' };
+      if (typeof x === 'string') return { id: null, public_id: null, name: x };
+      return { id: x?.id ?? null, public_id: x?.public_id ?? null, name: x?.name ?? '' };
     })
     .filter((x) => String(x.name ?? '').trim() !== '');
 }
@@ -643,6 +644,19 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
   const editionText = useMemo(() => copyValue(album?.edition), [album?.edition]);
   const hasEdition = editionText !== '' && editionText !== '-';
   const hasCoverImage = Boolean(album?.cover_image_url);
+  const coverMetaText = useMemo(() => {
+    const width = Number(album?.cover_image_meta?.width ?? 0);
+    const height = Number(album?.cover_image_meta?.height ?? 0);
+    const bytes = Number(album?.cover_image_meta?.bytes ?? 0);
+    const parts = [];
+    if (Number.isFinite(width) && width > 0 && Number.isFinite(height) && height > 0) {
+      parts.push(`${width}x${height}px`);
+    }
+    if (Number.isFinite(bytes) && bytes > 0) {
+      parts.push(formatFileSize(bytes));
+    }
+    return parts.join(' / ');
+  }, [album?.cover_image_meta?.bytes, album?.cover_image_meta?.height, album?.cover_image_meta?.width]);
   const coverCopyrightText = useMemo(() => {
     const label = copyValue(album?.label);
     return hasCoverImage && label !== '' ? '(C) ' + label : '';
@@ -711,7 +725,7 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
             <span key={`${token}-${person.id ?? 'text'}-${idx}`}>
               {person.id ? (
                 <Link
-                  to={`/artists/${person.id}/tracks?role=${encodeURIComponent(role)}`}
+                  to={getArtistTracksRoutePath(person, role)}
                   className="text-blue-600 dark:text-sky-400 hover:underline underline-offset-4"
                 >
                   {person.name}
@@ -1162,8 +1176,11 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
                 <span className="text-xs text-gray-500 dark:text-gray-300">No Image</span>
               )}
             </div>
-            {coverCopyrightText && (
-              <p className="mt-1 text-[10px] leading-tight text-gray-400 dark:text-gray-500">{coverCopyrightText}</p>
+            {(coverMetaText || coverCopyrightText) && (
+              <div className="mt-1 flex items-start justify-between gap-3 text-[10px] leading-tight text-gray-400 dark:text-gray-500">
+                <div className="min-w-0 flex-1 text-left">{coverMetaText && <p>{coverMetaText}</p>}</div>
+                <div className="shrink-0 text-right">{coverCopyrightText && <p>{coverCopyrightText}</p>}</div>
+              </div>
             )}
           </div>
 
@@ -1199,7 +1216,7 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
               <div className="inline-flex max-w-full items-start gap-2">
                 {shouldLinkAlbumArtist ? (
                   <Link
-                    to={`/artists/${album.album_artist.public_id ?? album.album_artist.id}/albums`}
+                    to={getArtistAlbumsRoutePath(album.album_artist)}
                     className="min-w-0 break-words text-left text-blue-600 dark:text-sky-400 hover:underline underline-offset-4"
                   >
                     {showValue(albumArtistName)}

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Routes, Route, Link } from 'react-router-dom';
-import { ArrowDown, ArrowUp, ArrowUpDown, Moon, Sun } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, CalendarRange, Moon, RefreshCcw, Sparkles, Sun } from 'lucide-react';
 import { fetchAllAlbums } from './api/albums';
 import AlbumDetail from './pages/AlbumDetail';
 import AlbumCorrectionRequest from './pages/AlbumCorrectionRequest';
@@ -11,8 +11,8 @@ import TrackSearch from './pages/TrackSearch';
 import SiteFooter from './components/SiteFooter';
 import { getAlbumRoutePath } from './utils/albumPublicId';
 
-const TOP_RELEASE_LIMIT = 10;
 const SEARCH_PAGE_SIZE = 20;
+const FEATURED_TILE_LIMIT = 12;
 const THEME_STORAGE_KEY = 'theme-preference';
 
 const isBlankValue = (value) => String(value ?? '').trim() === '';
@@ -34,13 +34,8 @@ const compareCatalogNumbers = (left, right) => {
     });
   }
 
-  if (!normalizedLeft) {
-    return 1;
-  }
-
-  if (!normalizedRight) {
-    return -1;
-  }
+  if (!normalizedLeft) return 1;
+  if (!normalizedRight) return -1;
 
   return normalizedLeft.localeCompare(normalizedRight, undefined, {
     numeric: true,
@@ -55,15 +50,11 @@ const getSortableTimestamp = (value) => {
 
 const compareVariantRepresentative = (left, right) => {
   const catalogComparison = compareCatalogNumbers(left?.catalog_number, right?.catalog_number);
-  if (catalogComparison !== 0) {
-    return catalogComparison;
-  }
+  if (catalogComparison !== 0) return catalogComparison;
 
   const releaseDateComparison =
     getSortableTimestamp(left?.release_date) - getSortableTimestamp(right?.release_date);
-  if (releaseDateComparison !== 0) {
-    return releaseDateComparison;
-  }
+  if (releaseDateComparison !== 0) return releaseDateComparison;
 
   return Number(left?.id ?? Number.MAX_SAFE_INTEGER) - Number(right?.id ?? Number.MAX_SAFE_INTEGER);
 };
@@ -73,7 +64,6 @@ const getVariantKey = (album) => {
   if (variantGroupKey !== '') {
     return `variant:${variantGroupKey}`;
   }
-
   return `album:${album?.id ?? ''}`;
 };
 
@@ -83,7 +73,6 @@ const collapseEditionVariants = (albums) => {
   for (const album of albums) {
     const key = getVariantKey(album);
     const current = representativeByGroup.get(key);
-
     if (!current || compareVariantRepresentative(album, current) < 0) {
       representativeByGroup.set(key, album);
     }
@@ -104,11 +93,49 @@ const formatAlbumListTitle = (album) => {
   const variantGroupKey = String(album?.variant_group_key ?? '').trim();
 
   if (variantGroupKey !== '' && edition !== '' && edition !== '-') {
-    return title !== '' ? `${title}\u3010${edition}\u3011` : `\u3010${edition}\u3011`;
+    return title !== '' ? `${title}【${edition}】` : `【${edition}】`;
   }
 
   return title;
 };
+
+const formatDateYmd = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const formatDateSlash = (value) => String(value ?? '').trim().replace(/-/g, '/');
+
+const getUpcomingReleaseWindow = (baseDate = new Date()) => {
+  const start = new Date(baseDate);
+  const day = start.getDay();
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+  start.setDate(start.getDate() + diffToMonday);
+  start.setHours(0, 0, 0, 0);
+
+  const end = new Date(start);
+  end.setDate(start.getDate() + 13);
+  end.setHours(23, 59, 59, 999);
+
+  return {
+    from: formatDateYmd(start),
+    to: formatDateYmd(end),
+    label: `${formatDateYmd(start).replace(/-/g, '/')} - ${formatDateYmd(end).replace(/-/g, '/')}`,
+  };
+};
+
+const shuffleAlbums = (items) => {
+  const next = Array.isArray(items) ? items.slice() : [];
+  for (let i = next.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [next[i], next[j]] = [next[j], next[i]];
+  }
+  return next;
+};
+
+const pickFeaturedAlbums = (items) => shuffleAlbums(items).slice(0, FEATURED_TILE_LIMIT);
 
 function App() {
   const [albums, setAlbums] = useState([]);
@@ -125,6 +152,12 @@ function App() {
   const [resultCount, setResultCount] = useState(0);
   const [resultLimited, setResultLimited] = useState(false);
   const [resultLimit, setResultLimit] = useState(1000);
+
+  const [featuredRefreshKey, setFeaturedRefreshKey] = useState(0);
+  const [featuredAlbums, setFeaturedAlbums] = useState([]);
+  const [featuredLoading, setFeaturedLoading] = useState(false);
+  const [featuredError, setFeaturedError] = useState('');
+  const [featuredRangeLabel, setFeaturedRangeLabel] = useState('');
 
   const [sort, setSort] = useState('release_date');
   const [order, setOrder] = useState('desc');
@@ -148,7 +181,6 @@ function App() {
       isBlankValue(nextReleaseDate)
     );
   };
-
   const loadAlbums = async (page = 1, override = {}) => {
     setLoading(true);
     setError('');
@@ -163,20 +195,16 @@ function App() {
         order: override.order ?? order,
       };
 
-      const topOnlyMode = isEmptySearch(override);
       const response = await fetchAllAlbums(query);
       const fetchedAlbums = Array.isArray(response.data) ? response.data : [];
       const shouldCollapseEditionVariants =
         isBlankValue(query.catalog_number) &&
         isBlankValue(query.title) &&
         isBlankValue(query.artist);
-      const nextAlbums = shouldCollapseEditionVariants
-        ? collapseEditionVariants(fetchedAlbums)
-        : fetchedAlbums;
-      const pageSize = topOnlyMode ? TOP_RELEASE_LIMIT : SEARCH_PAGE_SIZE;
+      const nextAlbums = shouldCollapseEditionVariants ? collapseEditionVariants(fetchedAlbums) : fetchedAlbums;
       const totalValue = nextAlbums.length;
-      const nextLastPage = Math.max(1, Math.ceil(Math.max(totalValue, 1) / pageSize));
-      const nextPage = topOnlyMode ? 1 : Math.min(Math.max(page, 1), nextLastPage);
+      const nextLastPage = Math.max(1, Math.ceil(Math.max(totalValue, 1) / SEARCH_PAGE_SIZE));
+      const nextPage = Math.min(Math.max(page, 1), nextLastPage);
 
       setAlbums(nextAlbums);
       setCurrentPage(nextPage);
@@ -198,11 +226,6 @@ function App() {
   };
 
   useEffect(() => {
-    loadAlbums(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
 
     const applyTheme = () => {
@@ -217,18 +240,12 @@ function App() {
       if (themeMode === 'system') applyTheme();
     };
 
-    if (mq.addEventListener) {
-      mq.addEventListener('change', onMediaChange);
-    } else {
-      mq.addListener(onMediaChange);
-    }
+    if (mq.addEventListener) mq.addEventListener('change', onMediaChange);
+    else mq.addListener(onMediaChange);
 
     return () => {
-      if (mq.removeEventListener) {
-        mq.removeEventListener('change', onMediaChange);
-      } else {
-        mq.removeListener(onMediaChange);
-      }
+      if (mq.removeEventListener) mq.removeEventListener('change', onMediaChange);
+      else mq.removeListener(onMediaChange);
     };
   }, [themeMode]);
 
@@ -239,6 +256,38 @@ function App() {
     }
     window.localStorage.setItem(THEME_STORAGE_KEY, themeMode);
   }, [themeMode]);
+
+  useEffect(() => {
+    const releaseWindow = getUpcomingReleaseWindow();
+    setFeaturedRangeLabel(releaseWindow.label);
+
+    const loadFeaturedAlbums = async () => {
+      setFeaturedLoading(true);
+      setFeaturedError('');
+      try {
+        const response = await fetchAllAlbums({
+          release_date_from: releaseWindow.from,
+          release_date_to: releaseWindow.to,
+          sort: 'release_date',
+          order: 'asc',
+        });
+        const fetchedAlbums = Array.isArray(response.data) ? response.data : [];
+        const upcomingAlbums = collapseEditionVariants(fetchedAlbums).filter((album) => {
+          const releaseValue = String(album?.release_date ?? '').trim();
+          return releaseValue !== '' && releaseValue >= releaseWindow.from && releaseValue <= releaseWindow.to;
+        });
+
+        setFeaturedAlbums(pickFeaturedAlbums(upcomingAlbums));
+      } catch {
+        setFeaturedAlbums([]);
+        setFeaturedError('今週〜来週の発売予定の取得に失敗しました。');
+      } finally {
+        setFeaturedLoading(false);
+      }
+    };
+
+    loadFeaturedAlbums();
+  }, [featuredRefreshKey]);
 
   const toggleTheme = () => {
     const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -310,7 +359,7 @@ function App() {
       if (start > 2) addEllipsis('start');
     }
 
-    for (let i = start; i <= end; i++) {
+    for (let i = start; i <= end; i += 1) {
       addPage(i);
     }
 
@@ -322,36 +371,41 @@ function App() {
     return pages;
   };
 
-  const visibleAlbums = isEmptySearch()
-    ? albums.slice(0, TOP_RELEASE_LIMIT)
-    : albums.slice((currentPage - 1) * SEARCH_PAGE_SIZE, currentPage * SEARCH_PAGE_SIZE);
+  const visibleAlbums = albums.slice((currentPage - 1) * SEARCH_PAGE_SIZE, currentPage * SEARCH_PAGE_SIZE);
 
   const handleClear = () => {
     setTitle('');
     setCatalogNumber('');
     setReleaseDate('');
     setArtist('');
+    setAlbums([]);
     setCurrentPage(1);
+    setLastPage(1);
     setError('');
+    setResultCount(0);
+    setResultLimited(false);
+  };
 
-    loadAlbums(1, {
-      title: '',
-      catalog_number: '',
-      release_date: '',
-      artist: '',
-    });
+  const refreshFeatured = () => {
+    setFeaturedRefreshKey((value) => value + 1);
   };
 
   const themeLabel = isDarkMode ? 'ライト' : 'ダーク';
   const themeTitle = isDarkMode ? 'ライトモードに切り替え' : 'ダークモードに切り替え';
-
+  const isInitialView = isEmptySearch();
   return (
     <>
       <Routes>
         <Route
           path="/"
           element={
-            <div className="min-h-screen bg-gray-100 text-gray-900 dark:bg-gray-900 dark:text-gray-100 px-3 pb-6 pt-4 sm:p-6 relative">
+            <div className="min-h-screen overflow-hidden bg-gray-100 px-3 pb-6 pt-4 text-gray-900 dark:bg-gray-900 dark:text-gray-100 sm:p-6 relative">
+              <div className="pointer-events-none absolute inset-0 opacity-80">
+                <div className="absolute -left-24 top-12 h-56 w-56 rounded-full bg-sky-200/50 blur-3xl dark:bg-sky-500/10" />
+                <div className="absolute right-0 top-0 h-72 w-72 rounded-full bg-emerald-200/40 blur-3xl dark:bg-emerald-500/10" />
+                <div className="absolute bottom-8 left-1/3 h-40 w-40 rounded-full bg-blue-200/40 blur-3xl dark:bg-blue-500/10" />
+              </div>
+
               <button
                 type="button"
                 onClick={toggleTheme}
@@ -362,190 +416,301 @@ function App() {
                 {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
                 <span>{themeLabel}</span>
               </button>
-              <div className="max-w-7xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-                  <h1 className="text-2xl font-bold">CD情報検索</h1>
-                  <div className="flex items-center gap-2 self-start sm:self-auto">
-                    <button
-                      type="button"
-                      onClick={toggleTheme}
-                      className="inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-700 shadow hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700 lg:hidden"
-                      title={themeTitle}
-                      aria-label={themeTitle}
-                    >
-                      {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
-                      <span>{themeLabel}</span>
-                    </button>
-                    <Link
-                      to="/tracks"
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                    >
-                      曲検索へ
-                    </Link>
+
+              <div className="relative mx-auto max-w-7xl rounded-[28px] bg-white/95 p-4 shadow-xl ring-1 ring-black/5 backdrop-blur dark:bg-gray-800/95 dark:ring-white/10 sm:p-6">
+                <div className="mb-6 overflow-hidden rounded-[24px] border border-slate-200/70 bg-gradient-to-br from-slate-50 via-white to-sky-50/80 px-4 py-5 shadow-sm dark:border-slate-700/70 dark:from-slate-800 dark:via-slate-800 dark:to-slate-900 sm:px-6 sm:py-6">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="space-y-3">
+                      <span className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-3 py-1 text-[11px] font-medium tracking-[0.18em] text-white dark:bg-white dark:text-slate-900">
+                        <Sparkles className="h-3.5 w-3.5" />
+                        CD ARCHIVE
+                      </span>
+                      <div className="space-y-2">
+                        <h1 className="text-2xl font-bold tracking-tight sm:text-[2rem]">CD情報検索</h1>
+                        <p className="max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
+                          タイトル、アーティスト、規格品番、発売日から横断検索できます。
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 self-start sm:self-auto">
+                      <button
+                        type="button"
+                        onClick={toggleTheme}
+                        className="inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-700 shadow hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700 lg:hidden"
+                        title={themeTitle}
+                        aria-label={themeTitle}
+                      >
+                        {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+                        <span>{themeLabel}</span>
+                      </button>
+                      <Link
+                        to="/tracks"
+                        className="inline-flex items-center justify-center rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 dark:bg-sky-500 dark:text-slate-950 dark:hover:bg-sky-400"
+                      >
+                        曲検索へ
+                      </Link>
+                    </div>
                   </div>
+
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      loadAlbums(1);
+                    }}
+                    className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-5"
+                  >
+                    <input
+                      className="rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-sm shadow-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-200 dark:border-slate-600 dark:bg-slate-800/90"
+                      placeholder="タイトル"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                    />
+
+                    <input
+                      className="rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-sm shadow-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-200 dark:border-slate-600 dark:bg-slate-800/90"
+                      placeholder="アーティスト"
+                      value={artist}
+                      onChange={(e) => setArtist(e.target.value)}
+                    />
+
+                    <input
+                      className="rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-sm shadow-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-200 dark:border-slate-600 dark:bg-slate-800/90"
+                      placeholder="規格品番"
+                      value={catalogNumber}
+                      onChange={(e) => setCatalogNumber(e.target.value)}
+                    />
+
+                    <input
+                      type="date"
+                      className="rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-sm shadow-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-200 dark:border-slate-600 dark:bg-slate-800/90"
+                      value={releaseDate}
+                      onChange={(e) => setReleaseDate(e.target.value)}
+                    />
+
+                    <div className="flex gap-3">
+                      <button
+                        type="submit"
+                        className="flex-1 rounded-2xl bg-sky-600 px-4 py-3 text-sm font-medium text-white shadow-sm transition hover:bg-sky-700"
+                      >
+                        検索
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleClear}
+                        className="flex-1 rounded-2xl bg-slate-200 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600"
+                      >
+                        クリア
+                      </button>
+                    </div>
+                  </form>
                 </div>
 
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    loadAlbums(1);
-                  }}
-                  className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6"
-                >
-                  <input
-                    className="border rounded px-3 py-2 bg-white dark:bg-gray-700"
-                    placeholder="タイトル"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                  />
+                {isInitialView && (
+                  <section className="mb-8 rounded-[24px] border border-slate-200/70 bg-gradient-to-br from-slate-50 via-white to-sky-50/70 p-4 shadow-sm dark:border-slate-700/70 dark:from-slate-800 dark:via-slate-800 dark:to-slate-900 sm:p-5">
+                    <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="space-y-2">
+                        <p className="inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-[11px] font-medium tracking-[0.18em] text-slate-700 shadow-sm dark:bg-slate-700/80 dark:text-slate-100">
+                          <CalendarRange className="h-3.5 w-3.5" />
+                          UPCOMING PICKUP
+                        </p>
+                        <div>
+                          <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">Upcoming CDs</h2>
+                          <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                            {featuredRangeLabel}
+                          </p>
+                        </div>
+                      </div>
 
-                  <input
-                    className="border rounded px-3 py-2 bg-white dark:bg-gray-700"
-                    placeholder="アーティスト"
-                    value={artist}
-                    onChange={(e) => setArtist(e.target.value)}
-                  />
+                      <button
+                        type="button"
+                        onClick={refreshFeatured}
+                        disabled={featuredLoading}
+                        className="inline-flex items-center justify-center gap-2 self-start rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
+                      >
+                        <RefreshCcw className="h-4 w-4" />
+                        Reload
+                      </button>
+                    </div>
 
-                  <input
-                    className="border rounded px-3 py-2 bg-white dark:bg-gray-700"
-                    placeholder="規格品番"
-                    value={catalogNumber}
-                    onChange={(e) => setCatalogNumber(e.target.value)}
-                  />
+                    {featuredLoading && (
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                        {Array.from({ length: FEATURED_TILE_LIMIT }).map((_, index) => (
+                          <div
+                            key={index}
+                            className="h-[300px] animate-pulse rounded-[24px] border border-slate-200 bg-slate-200/70 dark:border-slate-700 dark:bg-slate-700/60"
+                          />
+                        ))}
+                      </div>
+                    )}
 
-                  <input
-                    type="date"
-                    className="border rounded px-3 py-2 bg-white dark:bg-gray-700"
-                    value={releaseDate}
-                    onChange={(e) => setReleaseDate(e.target.value)}
-                  />
+                    {!featuredLoading && featuredError && (
+                      <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
+                        {featuredError}
+                      </p>
+                    )}
 
-                  <div className="flex gap-3">
-                    <button
-                      type="submit"
-                      className="flex-1 bg-blue-600 text-white rounded px-4 py-2 hover:bg-blue-700"
-                    >
-                      検索
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleClear}
-                      className="flex-1 bg-gray-300 dark:bg-gray-700 rounded px-4 py-2 hover:bg-gray-400 dark:hover:bg-gray-600"
-                    >
-                      クリア
-                    </button>
-                  </div>
-                </form>
+                    {!featuredLoading && !featuredError && featuredAlbums.length === 0 && (
+                      <p className="rounded-2xl border border-slate-200 bg-white px-4 py-4 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                        この期間に該当するCDは見つかりませんでした。
+                      </p>
+                    )}
+                    {!featuredLoading && featuredAlbums.length > 0 && (
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                        {featuredAlbums.map((album) => (
+                          <Link
+                            key={album.id}
+                            to={getAlbumRoutePath(album)}
+                            state={{ title: album.title }}
+                            className="group relative isolate flex min-h-[300px] overflow-hidden rounded-[24px] border border-slate-900/10 bg-slate-950 shadow-lg transition duration-300 hover:-translate-y-1 hover:shadow-2xl dark:border-white/10"
+                          >
+                            {album.cover_image_url ? (
+                              <img
+                                src={album.cover_image_url}
+                                alt={formatAlbumListTitle(album)}
+                                loading="lazy"
+                                decoding="async"
+                                className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
+                              />
+                            ) : (
+                              <div className="absolute inset-0 bg-gradient-to-br from-slate-700 via-slate-800 to-slate-950" />
+                            )}
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/10" />
+                            <div className="relative flex h-full w-full flex-col justify-between p-4">
+                              <div className="flex items-start justify-between gap-3">
+                                <span className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-black/30 px-3 py-1 text-[11px] font-medium text-white/90 backdrop-blur-sm">
+                                  <CalendarRange className="h-3 w-3" />
+                                  {formatDateSlash(album.release_date)}
+                                </span>
+                                <span className="rounded-full border border-white/10 bg-white/10 px-2.5 py-1 text-[10px] font-medium tracking-[0.14em] text-white/85 backdrop-blur-sm">
+                                  {String(album.catalog_number ?? '').trim() || 'unknown'}
+                                </span>
+                              </div>
 
-                {loading && <p className="text-gray-400">Loading...</p>}
-                {error && <p className="text-red-500">{error}</p>}
-                {!loading && !error && !isEmptySearch() && (
+                              <div className="space-y-2">
+                                <p className="text-[11px] font-medium tracking-[0.22em] text-white/60">CD RELEASE</p>
+                                <h3 className="text-lg font-semibold leading-snug text-white">{formatAlbumListTitle(album)}</h3>
+                                <p className="text-sm leading-6 text-white/80">{album.album_artist?.name ?? '-'}</p>
+                              </div>
+                            </div>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </section>
+                )}
+
+                {!isInitialView && loading && <p className="text-gray-400">Loading...</p>}
+                {!isInitialView && error && <p className="text-red-500">{error}</p>}
+                {!loading && !error && !isInitialView && (
                   <p className="mb-3 text-sm text-gray-600 dark:text-gray-300">
                     検索結果: {resultCount}件
                     {resultLimited ? `（上限 ${resultLimit}件）` : ''}
                   </p>
                 )}
 
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[760px] border-collapse text-sm">
-                    <thead>
-                    <tr className="bg-gray-200 dark:bg-gray-700">
-                      <th className="border px-3 py-2 w-20 text-sm whitespace-nowrap">ジャケット</th>
-                      <th className={sortableHeaderClass}>
-                        <button
-                          type="button"
-                          className="inline-flex items-center gap-1 whitespace-nowrap"
-                          onClick={() => changeSort('title')}
-                          aria-label="タイトルでソート"
-                        >
-                          タイトル
-                          {sortIcon('title')}
-                        </button>
-                      </th>
-                      <th className={sortableHeaderClass}>
-                        <button
-                          type="button"
-                          className="inline-flex items-center gap-1 whitespace-nowrap"
-                          onClick={() => changeSort('artist')}
-                          aria-label="アーティストでソート"
-                        >
-                          アーティスト
-                          {sortIcon('artist')}
-                        </button>
-                      </th>
-                      <th className={sortableHeaderClass}>
-                        <button
-                          type="button"
-                          className="inline-flex items-center gap-1 whitespace-nowrap"
-                          onClick={() => changeSort('catalog_number')}
-                          aria-label="規格品番でソート"
-                        >
-                          規格品番
-                          {sortIcon('catalog_number')}
-                        </button>
-                      </th>
-                      <th className={sortableHeaderClass}>
-                        <button
-                          type="button"
-                          className="inline-flex items-center gap-1 whitespace-nowrap"
-                          onClick={() => changeSort('release_date')}
-                          aria-label="発売日でソート"
-                        >
-                          発売日
-                          {sortIcon('release_date')}
-                        </button>
-                      </th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {visibleAlbums.map((a) => (
-                      <tr key={a.id} className="hover:bg-gray-100 dark:hover:bg-gray-700">
-                        <td className="border px-2 py-2">
-                          <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden flex items-center justify-center">
-                            {a.cover_image_url ? (
-                              <img
-                                src={a.cover_image_url}
-                                alt={formatAlbumListTitle(a)}
-                                loading="lazy"
-                                decoding="async"
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  e.currentTarget.style.display = 'none';
-                                  e.currentTarget.nextSibling.style.display = 'block';
-                                }}
-                              />
-                            ) : null}
-                            <span
-                              className="text-xs text-gray-500 dark:text-gray-300"
-                              style={{ display: a.cover_image_url ? 'none' : 'block' }}
+                {!isInitialView && (
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[760px] border-collapse text-sm">
+                      <thead>
+                        <tr className="bg-gray-200 dark:bg-gray-700">
+                          <th className="border px-3 py-2 w-20 text-sm whitespace-nowrap">ジャケット</th>
+                          <th className={sortableHeaderClass}>
+                            <button
+                              type="button"
+                              className="inline-flex items-center gap-1 whitespace-nowrap"
+                              onClick={() => changeSort('title')}
+                              aria-label="タイトルでソート"
                             >
-                              No Image
-                            </span>
-                          </div>
-                        </td>
+                              タイトル
+                              {sortIcon('title')}
+                            </button>
+                          </th>
+                          <th className={sortableHeaderClass}>
+                            <button
+                              type="button"
+                              className="inline-flex items-center gap-1 whitespace-nowrap"
+                              onClick={() => changeSort('artist')}
+                              aria-label="アーティストでソート"
+                            >
+                              アーティスト
+                              {sortIcon('artist')}
+                            </button>
+                          </th>
+                          <th className={sortableHeaderClass}>
+                            <button
+                              type="button"
+                              className="inline-flex items-center gap-1 whitespace-nowrap"
+                              onClick={() => changeSort('catalog_number')}
+                              aria-label="規格品番でソート"
+                            >
+                              規格品番
+                              {sortIcon('catalog_number')}
+                            </button>
+                          </th>
+                          <th className={sortableHeaderClass}>
+                            <button
+                              type="button"
+                              className="inline-flex items-center gap-1 whitespace-nowrap"
+                              onClick={() => changeSort('release_date')}
+                              aria-label="発売日でソート"
+                            >
+                              発売日
+                              {sortIcon('release_date')}
+                            </button>
+                          </th>
+                        </tr>
+                      </thead>
 
-                        <td className="border px-4 py-2">
-                          <Link
-                            to={getAlbumRoutePath(a)}
-                            state={{ title: a.title }}
-                            className="text-blue-600 dark:text-sky-400 hover:text-blue-800 dark:hover:text-sky-300 hover:underline underline-offset-4"
-                          >
-                            {formatAlbumListTitle(a)}
-                          </Link>
-                        </td>
+                      <tbody>
+                        {visibleAlbums.map((a) => (
+                          <tr key={a.id} className="hover:bg-gray-100 dark:hover:bg-gray-700">
+                            <td className="border px-2 py-2">
+                              <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden flex items-center justify-center">
+                                {a.cover_image_url ? (
+                                  <img
+                                    src={a.cover_image_url}
+                                    alt={formatAlbumListTitle(a)}
+                                    loading="lazy"
+                                    decoding="async"
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = 'none';
+                                      e.currentTarget.nextSibling.style.display = 'block';
+                                    }}
+                                  />
+                                ) : null}
+                                <span
+                                  className="text-xs text-gray-500 dark:text-gray-300"
+                                  style={{ display: a.cover_image_url ? 'none' : 'block' }}
+                                >
+                                  No Image
+                                </span>
+                              </div>
+                            </td>
 
-                        <td className="border px-4 py-2">{a.album_artist?.name ?? '-'}</td>
-                        <td className="border px-4 py-2 whitespace-nowrap w-[9.5rem]">{a.catalog_number}</td>
-                        <td className="border px-4 py-2 whitespace-nowrap w-[8.5rem]">{a.release_date}</td>
-                      </tr>
-                    ))}
-                    </tbody>
-                  </table>
-                </div>
+                            <td className="border px-4 py-2">
+                              <Link
+                                to={getAlbumRoutePath(a)}
+                                state={{ title: a.title }}
+                                className="text-blue-600 dark:text-sky-400 hover:text-blue-800 dark:hover:text-sky-300 hover:underline underline-offset-4"
+                              >
+                                {formatAlbumListTitle(a)}
+                              </Link>
+                            </td>
 
-                {!isEmptySearch() && (
-                  <div className="flex justify-center items-center gap-2 mt-6 flex-wrap">
+                            <td className="border px-4 py-2">{a.album_artist?.name ?? '-'}</td>
+                            <td className="border px-4 py-2 whitespace-nowrap w-[9.5rem]">{a.catalog_number}</td>
+                            <td className="border px-4 py-2 whitespace-nowrap w-[8.5rem]">{a.release_date}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {!isInitialView && (
+                  <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
                     <button
                       onClick={() => changePage(currentPage - 1)}
                       disabled={currentPage === 1}
@@ -601,4 +766,3 @@ function App() {
 }
 
 export default App;
-

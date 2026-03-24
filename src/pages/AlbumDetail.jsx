@@ -408,7 +408,8 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
 
   useEffect(() => {
     if (!album?.public_id) return;
-    if (!/^\d+$/.test(String(id ?? '').trim())) return;
+    if (String(id ?? '').trim() === '') return;
+    if (String(id) !== String(album.id)) return;
     if (String(id) === String(album.public_id)) return;
     navigate(getAlbumRoutePath(album, id), { replace: true });
   }, [album, id, navigate]);
@@ -1198,7 +1199,7 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
               <div className="inline-flex max-w-full items-start gap-2">
                 {shouldLinkAlbumArtist ? (
                   <Link
-                    to={`/artists/${album.album_artist.id}/albums`}
+                    to={`/artists/${album.album_artist.public_id ?? album.album_artist.id}/albums`}
                     className="min-w-0 break-words text-left text-blue-600 dark:text-sky-400 hover:underline underline-offset-4"
                   >
                     {showValue(albumArtistName)}
@@ -1258,7 +1259,7 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
                 <span className="text-left text-gray-500 dark:text-gray-300">シリーズ</span>
                 <div className="inline-flex max-w-full items-start gap-2">
                   <Link
-                    to={`/series/${album.series.id}/albums`}
+                    to={`/series/${album.series.public_id ?? album.series.id}/albums`}
                     className="min-w-0 break-words text-left text-blue-600 dark:text-sky-400 hover:underline underline-offset-4"
                   >
                     {showValue(seriesName)}

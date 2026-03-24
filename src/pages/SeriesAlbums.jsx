@@ -5,6 +5,16 @@ import { buildApiUrl } from '../api/baseUrl';
 import SiteFooter from '../components/SiteFooter';
 import { getAlbumRoutePath } from '../utils/albumPublicId';
 
+function formatAlbumTitle(album) {
+  const title = String(album?.title ?? '').trim();
+  const edition = String(album?.edition ?? '').trim();
+
+  if (edition !== '' && edition !== '-') {
+    return title !== '' ? `${title}\u3010${edition}\u3011` : `\u3010${edition}\u3011`;
+  }
+
+  return title;
+}
 export default function SeriesAlbums({ isDarkMode = false, onToggleTheme = () => {} }) {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -35,7 +45,16 @@ export default function SeriesAlbums({ isDarkMode = false, onToggleTheme = () =>
   }, [apiUrl]);
 
   const albums = data?.albums ?? [];
+  const canonicalSeriesId = String(data?.series?.public_id ?? data?.series?.id ?? '').trim();
   const seriesName = data?.series?.name ?? `Series ID: ${id}`;
+  useEffect(() => {
+    if (!canonicalSeriesId) return;
+    if (String(id ?? '').trim() === '') return;
+    if (String(id) !== String(data?.series?.id ?? '')) return;
+    if (String(id) === canonicalSeriesId) return;
+    navigate('/series/' + canonicalSeriesId + '/albums', { replace: true });
+  }, [canonicalSeriesId, data?.series?.id, id, navigate]);
+
   const themeLabel = isDarkMode ? 'ライト' : 'ダーク';
   const themeTitle = isDarkMode ? 'ライトモードに切り替え' : 'ダークモードに切り替え';
 
@@ -51,7 +70,7 @@ export default function SeriesAlbums({ isDarkMode = false, onToggleTheme = () =>
         {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
         <span>{themeLabel}</span>
       </button>
-      <div className="max-w-5xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow p-4 sm:p-6">
+      <div className="max-w-6xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold">{seriesName} のアルバム一覧</h1>
@@ -95,7 +114,6 @@ export default function SeriesAlbums({ isDarkMode = false, onToggleTheme = () =>
                   <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left">アルバム</th>
                   <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left w-44">アルバムアーティスト</th>
                   <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left w-36">規格品番</th>
-                  <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left w-32">形態</th>
                   <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left w-32">発売日</th>
                   <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left w-40">JAN</th>
                 </tr>
@@ -109,12 +127,11 @@ export default function SeriesAlbums({ isDarkMode = false, onToggleTheme = () =>
                         to={getAlbumRoutePath(album)}
                         className="text-blue-600 dark:text-sky-400 hover:underline underline-offset-4"
                       >
-                        {album.title}
+                        {formatAlbumTitle(album)}
                       </Link>
                     </td>
                     <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">{album.album_artist?.name ?? '-'}</td>
                     <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">{album.catalog_number ?? '-'}</td>
-                    <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">{album.edition ?? '-'}</td>
                     <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">{album.release_date ?? '-'}</td>
                     <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">{album.jan ?? '-'}</td>
                   </tr>
@@ -124,7 +141,7 @@ export default function SeriesAlbums({ isDarkMode = false, onToggleTheme = () =>
                   <tr>
                     <td
                       className="border border-gray-300 dark:border-gray-600 px-3 py-6 text-center text-gray-600 dark:text-gray-300"
-                      colSpan={6}
+                      colSpan={5}
                     >
                       データがありません
                     </td>

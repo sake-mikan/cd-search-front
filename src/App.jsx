@@ -98,6 +98,18 @@ const collapseEditionVariants = (albums) => {
   return albums.filter((album) => representativeIds.has(album?.id));
 };
 
+const formatAlbumListTitle = (album) => {
+  const title = String(album?.title ?? '').trim();
+  const edition = String(album?.edition ?? '').trim();
+  const variantGroupKey = String(album?.variant_group_key ?? '').trim();
+
+  if (variantGroupKey !== '' && edition !== '' && edition !== '-') {
+    return title !== '' ? `${title}\u3010${edition}\u3011` : `\u3010${edition}\u3011`;
+  }
+
+  return title;
+};
+
 function App() {
   const [albums, setAlbums] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -154,7 +166,11 @@ function App() {
       const topOnlyMode = isEmptySearch(override);
       const response = await fetchAllAlbums(query);
       const fetchedAlbums = Array.isArray(response.data) ? response.data : [];
-      const nextAlbums = isBlankValue(query.catalog_number)
+      const shouldCollapseEditionVariants =
+        isBlankValue(query.catalog_number) &&
+        isBlankValue(query.title) &&
+        isBlankValue(query.artist);
+      const nextAlbums = shouldCollapseEditionVariants
         ? collapseEditionVariants(fetchedAlbums)
         : fetchedAlbums;
       const pageSize = topOnlyMode ? TOP_RELEASE_LIMIT : SEARCH_PAGE_SIZE;
@@ -346,7 +362,7 @@ function App() {
                 {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
                 <span>{themeLabel}</span>
               </button>
-              <div className="max-w-6xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6">
+              <div className="max-w-7xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow p-4 sm:p-6">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                   <h1 className="text-2xl font-bold">CD情報検索</h1>
                   <div className="flex items-center gap-2 self-start sm:self-auto">
@@ -490,7 +506,7 @@ function App() {
                             {a.cover_image_url ? (
                               <img
                                 src={a.cover_image_url}
-                                alt={a.title}
+                                alt={formatAlbumListTitle(a)}
                                 loading="lazy"
                                 decoding="async"
                                 className="w-full h-full object-cover"
@@ -515,13 +531,13 @@ function App() {
                             state={{ title: a.title }}
                             className="text-blue-600 dark:text-sky-400 hover:text-blue-800 dark:hover:text-sky-300 hover:underline underline-offset-4"
                           >
-                            {a.title}
+                            {formatAlbumListTitle(a)}
                           </Link>
                         </td>
 
                         <td className="border px-4 py-2">{a.album_artist?.name ?? '-'}</td>
-                        <td className="border px-4 py-2">{a.catalog_number}</td>
-                        <td className="border px-4 py-2">{a.release_date}</td>
+                        <td className="border px-4 py-2 whitespace-nowrap w-[9.5rem]">{a.catalog_number}</td>
+                        <td className="border px-4 py-2 whitespace-nowrap w-[8.5rem]">{a.release_date}</td>
                       </tr>
                     ))}
                     </tbody>

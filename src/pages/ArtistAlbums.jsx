@@ -5,6 +5,16 @@ import { buildApiUrl } from '../api/baseUrl';
 import SiteFooter from '../components/SiteFooter';
 import { getAlbumRoutePath } from '../utils/albumPublicId';
 
+function formatAlbumTitle(album) {
+  const title = String(album?.title ?? '').trim();
+  const edition = String(album?.edition ?? '').trim();
+
+  if (edition !== '' && edition !== '-') {
+    return title !== '' ? `${title}\u3010${edition}\u3011` : `\u3010${edition}\u3011`;
+  }
+
+  return title;
+}
 function membersText(value) {
   if (!Array.isArray(value)) return '';
   return value
@@ -43,8 +53,17 @@ export default function ArtistAlbums({ isDarkMode = false, onToggleTheme = () =>
   }, [apiUrl]);
 
   const albums = Array.isArray(data?.albums) ? data.albums : [];
+  const canonicalArtistId = String(data?.artist?.public_id ?? data?.artist?.id ?? '').trim();
   const artistName = data?.artist?.name ?? `Artist ID: ${id}`;
   const isUnit = String(data?.artist?.type ?? '') === 'unit';
+  useEffect(() => {
+    if (!canonicalArtistId) return;
+    if (String(id ?? '').trim() === '') return;
+    if (String(id) !== String(data?.artist?.id ?? '')) return;
+    if (String(id) === canonicalArtistId) return;
+    navigate('/artists/' + canonicalArtistId + '/albums', { replace: true });
+  }, [canonicalArtistId, data?.artist?.id, id, navigate]);
+
   const themeLabel = isDarkMode ? 'ライト' : 'ダーク';
   const themeTitle = isDarkMode ? 'ライトモードに切り替え' : 'ダークモードに切り替え';
 
@@ -108,12 +127,11 @@ export default function ArtistAlbums({ isDarkMode = false, onToggleTheme = () =>
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="bg-gray-200 dark:bg-gray-700">
-                  <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left">アルバム</th>
-                  <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left w-40">規格品番</th>
-                  <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left w-32">形態</th>
-                  <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left w-32">発売日</th>
+                  <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left">{'\u30a2\u30eb\u30d0\u30e0'}</th>
+                  <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left w-40">{'\u898f\u683c\u54c1\u756a'}</th>
+                  <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left w-40">{'\u767a\u58f2\u65e5'}</th>
                   <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left w-40">JAN</th>
-                  {isUnit && <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left">所属メンバー</th>}
+                  {isUnit && <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left">{'\u30e6\u30cb\u30c3\u30c8\u30e1\u30f3\u30d0\u30fc'}</th>}
                 </tr>
               </thead>
 
@@ -125,11 +143,10 @@ export default function ArtistAlbums({ isDarkMode = false, onToggleTheme = () =>
                         to={getAlbumRoutePath(album)}
                         className="text-blue-600 dark:text-sky-400 hover:underline underline-offset-4"
                       >
-                        {album.title}
+                        {formatAlbumTitle(album)}
                       </Link>
                     </td>
                     <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">{album.catalog_number ?? '-'}</td>
-                    <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">{album.edition ?? '-'}</td>
                     <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">{album.release_date ?? '-'}</td>
                     <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">{album.jan ?? '-'}</td>
                     {isUnit && (
@@ -144,7 +161,7 @@ export default function ArtistAlbums({ isDarkMode = false, onToggleTheme = () =>
                   <tr>
                     <td
                       className="border border-gray-300 dark:border-gray-600 px-3 py-6 text-center text-gray-600 dark:text-gray-300"
-                      colSpan={isUnit ? 6 : 5}
+                      colSpan={isUnit ? 5 : 4}
                     >
                       データがありません
                     </td>

@@ -5,8 +5,19 @@ import { buildApiUrl } from '../api/baseUrl';
 import SiteFooter from '../components/SiteFooter';
 import { getAlbumRoutePath } from '../utils/albumPublicId';
 
+function formatAlbumTitle(album) {
+  const title = String(album?.title ?? '').trim();
+  const edition = String(album?.edition ?? '').trim();
+
+  if (edition !== '' && edition !== '-') {
+    return title !== '' ? `${title}\u3010${edition}\u3011` : `\u3010${edition}\u3011`;
+  }
+
+  return title;
+}
+
 export default function ArtistTracks({ isDarkMode = false, onToggleTheme = () => {} }) {
-  const { id } = useParams(); // artist id
+  const { id } = useParams();
   const [searchParams] = useSearchParams();
   const role = searchParams.get('role') || '';
 
@@ -30,7 +41,7 @@ export default function ArtistTracks({ isDarkMode = false, onToggleTheme = () =>
       setData(await res.json());
     } catch (e) {
       console.error(e);
-      setError('関連楽曲一覧の取得に失敗しました。');
+      setError('\u95a2\u9023\u697d\u66f2\u4e00\u89a7\u306e\u53d6\u5f97\u306b\u5931\u6557\u3057\u307e\u3057\u305f\u3002');
     } finally {
       setLoading(false);
     }
@@ -43,14 +54,16 @@ export default function ArtistTracks({ isDarkMode = false, onToggleTheme = () =>
 
   const tracks = data?.tracks?.data ?? [];
   const artistName = data?.artist?.name ?? `Artist ID: ${id}`;
-  const themeLabel = isDarkMode ? 'ライト' : 'ダーク';
-  const themeTitle = isDarkMode ? 'ライトモードに切り替え' : 'ダークモードに切り替え';
+  const themeLabel = isDarkMode ? '\u30e9\u30a4\u30c8' : '\u30c0\u30fc\u30af';
+  const themeTitle = isDarkMode
+    ? '\u30e9\u30a4\u30c8\u30e2\u30fc\u30c9\u306b\u5207\u308a\u66ff\u3048'
+    : '\u30c0\u30fc\u30af\u30e2\u30fc\u30c9\u306b\u5207\u308a\u66ff\u3048';
 
-  const roleLabel = (r) => {
-    if (r === 'vocal') return '歌唱';
-    if (r === 'lyricist') return '作詞';
-    if (r === 'composer') return '作曲';
-    if (r === 'arranger') return '編曲';
+  const roleLabel = (value) => {
+    if (value === 'vocal') return '\u6b4c\u5531';
+    if (value === 'lyricist') return '\u4f5c\u8a5e';
+    if (value === 'composer') return '\u4f5c\u66f2';
+    if (value === 'arranger') return '\u7de8\u66f2';
     return '';
   };
 
@@ -66,13 +79,17 @@ export default function ArtistTracks({ isDarkMode = false, onToggleTheme = () =>
         {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
         <span>{themeLabel}</span>
       </button>
-      <div className="max-w-5xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow p-4 sm:p-6">
+      <div className="max-w-6xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow p-4 sm:p-6">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold">{artistName} の関連楽曲</h1>
+            <h1 className="text-2xl font-bold">{artistName}{' \u306e\u95a2\u9023\u697d\u66f2'}</h1>
             {role && (
               <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
-                絞り込み: {roleLabel(role)}（{role}）
+                {'\u7d5e\u308a\u8fbc\u307f: '}
+                {roleLabel(role)}
+                {' ('}
+                {role}
+                {')'}
               </p>
             )}
           </div>
@@ -92,13 +109,13 @@ export default function ArtistTracks({ isDarkMode = false, onToggleTheme = () =>
               onClick={() => navigate(-1)}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
-              戻る
+              {'\u623b\u308b'}
             </button>
           </div>
         </div>
 
         {loading && (
-          <div className="mt-6 p-4 rounded bg-gray-100 dark:bg-gray-700">読み込み中...</div>
+          <div className="mt-6 p-4 rounded bg-gray-100 dark:bg-gray-700">{'\u8aad\u307f\u8fbc\u307f\u4e2d...'}</div>
         )}
 
         {error && (
@@ -109,35 +126,31 @@ export default function ArtistTracks({ isDarkMode = false, onToggleTheme = () =>
 
         {!loading && !error && (
           <div className="mt-6 overflow-x-auto">
-            <table className="w-full border-collapse">
+            <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="bg-gray-200 dark:bg-gray-700">
-                  <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left">
-                    曲名
-                  </th>
-                  <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left">
-                    アルバム
-                  </th>
-                  <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left w-40">
-                    形態
-                  </th>
+                  <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left">{'\u66f2\u540d'}</th>
+                  <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left">{'\u30a2\u30eb\u30d0\u30e0'}</th>
+                  <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left w-40">{'\u898f\u683c\u54c1\u756a'}</th>
+                  <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left w-40">{'\u767a\u58f2\u65e5'}</th>
+                  <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left w-40">JAN</th>
                 </tr>
               </thead>
 
               <tbody>
-                {tracks.map((t) => (
-                  <tr key={t.id} className="hover:bg-gray-100 dark:hover:bg-gray-700">
+                {tracks.map((track) => (
+                  <tr key={track.id} className="hover:bg-gray-100 dark:hover:bg-gray-700">
                     <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 font-medium">
-                      {t.title}
+                      {track.title}
                     </td>
 
                     <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
-                      {t.album?.id ? (
+                      {track.album?.id ? (
                         <Link
-                          to={getAlbumRoutePath(t.album)}
+                          to={getAlbumRoutePath(track.album)}
                           className="text-blue-600 dark:text-sky-400 hover:underline underline-offset-4"
                         >
-                          {t.album.title}
+                          {formatAlbumTitle(track.album)}
                         </Link>
                       ) : (
                         <span className="text-gray-500 dark:text-gray-400">-</span>
@@ -145,7 +158,15 @@ export default function ArtistTracks({ isDarkMode = false, onToggleTheme = () =>
                     </td>
 
                     <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
-                      {t.album?.edition ?? '-'}
+                      {track.album?.catalog_number ?? '-'}
+                    </td>
+
+                    <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
+                      {track.album?.release_date ?? '-'}
+                    </td>
+
+                    <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
+                      {track.album?.jan ?? '-'}
                     </td>
                   </tr>
                 ))}
@@ -154,9 +175,9 @@ export default function ArtistTracks({ isDarkMode = false, onToggleTheme = () =>
                   <tr>
                     <td
                       className="border border-gray-300 dark:border-gray-600 px-3 py-6 text-center text-gray-600 dark:text-gray-300"
-                      colSpan={3}
+                      colSpan={5}
                     >
-                      データがありません
+                      {'\u30c7\u30fc\u30bf\u304c\u3042\u308a\u307e\u305b\u3093'}
                     </td>
                   </tr>
                 )}

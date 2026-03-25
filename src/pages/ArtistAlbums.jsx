@@ -1,5 +1,5 @@
-﻿import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Moon, Sun } from 'lucide-react';
 import { buildApiUrl } from '../api/baseUrl';
 import SiteFooter from '../components/SiteFooter';
@@ -12,6 +12,8 @@ import {
   mobileThemeButtonClass,
   pageCardClass,
   pageShellClass,
+  paginationActiveButtonClass,
+  paginationButtonClass,
   primaryButtonClass,
   tableCardClass,
   tableCellClass,
@@ -43,11 +45,22 @@ function membersText(value) {
 export default function ArtistAlbums({ isDarkMode = false, onToggleTheme = () => {} }) {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const apiUrl = useMemo(() => buildApiUrl(`/artists/${id}/albums`), [id]);
+  const currentPage = useMemo(() => {
+    const raw = Number.parseInt(searchParams.get('page') ?? '1', 10);
+    return Number.isFinite(raw) && raw > 0 ? raw : 1;
+  }, [searchParams]);
+
+  const apiUrl = useMemo(() => {
+    const qs = new URLSearchParams();
+    qs.set('page', String(currentPage));
+    qs.set('per_page', '20');
+    return buildApiUrl(`/artists/${id}/albums?${qs.toString()}`);
+  }, [currentPage, id]);
 
   useEffect(() => {
     const load = async () => {
@@ -69,21 +82,80 @@ export default function ArtistAlbums({ isDarkMode = false, onToggleTheme = () =>
     load();
   }, [apiUrl]);
 
-  const albums = Array.isArray(data?.albums) ? data.albums : [];
+  const albums = Array.isArray(data?.albums?.data) ? data.albums.data : [];
+  const currentPageFromData = Number(data?.albums?.current_page ?? currentPage) || 1;
+  const lastPage = Number(data?.albums?.last_page ?? 1) || 1;
   const canonicalArtistId = String(data?.artist?.public_id ?? data?.artist?.id ?? '').trim();
   const artistName = data?.artist?.name ?? `Artist ID: ${id}`;
   const isUnit = String(data?.artist?.type ?? '') === 'unit';
+
+  const setPage = (page) => {
+    const nextPage = Math.max(1, page);
+    const next = new URLSearchParams(searchParams);
+    if (nextPage === 1) {
+      next.delete('page');
+    } else {
+      next.set('page', String(nextPage));
+    }
+    setSearchParams(next);
+  };
 
   useEffect(() => {
     if (!canonicalArtistId) return;
     if (String(id ?? '').trim() === '') return;
     if (String(id) !== String(data?.artist?.id ?? '')) return;
     if (String(id) === canonicalArtistId) return;
-    navigate('/artists/' + canonicalArtistId + '/albums', { replace: true });
-  }, [canonicalArtistId, data?.artist?.id, id, navigate]);
+    const qs = currentPage > 1 ? `?page=${encodeURIComponent(String(currentPage))}` : '';
+    navigate('/artists/' + canonicalArtistId + '/albums' + qs, { replace: true });
+  }, [canonicalArtistId, currentPage, data?.artist?.id, id, navigate]);
 
   const themeLabel = isDarkMode ? 'ライト' : 'ダーク';
   const themeTitle = isDarkMode ? 'ライトモードに切り替え' : 'ダークモードに切り替え';
+
+  const renderPages = () => {
+    const pages = [];
+    const addPage = (page) => {
+      pages.push(
+        <button
+          key={page}
+          type="button"
+          onClick={() => setPage(page)}
+          disabled={page === currentPageFromData}
+          className={page === currentPageFromData ? paginationActiveButtonClass : paginationButtonClass}
+        >
+          {page}
+        </button>
+      );
+    };
+
+    const addEllipsis = (key) => {
+      pages.push(
+        <span key={key} className="px-2 py-1 text-slate-500 dark:text-slate-400">
+          ...
+        </span>
+      );
+    };
+
+    const windowSize = 2;
+    const start = Math.max(1, currentPageFromData - windowSize);
+    const end = Math.min(lastPage, currentPageFromData + windowSize);
+
+    if (start > 1) {
+      addPage(1);
+      if (start > 2) addEllipsis('start');
+    }
+
+    for (let page = start; page <= end; page += 1) {
+      addPage(page);
+    }
+
+    if (end < lastPage) {
+      if (end < lastPage - 1) addEllipsis('end');
+      addPage(lastPage);
+    }
+
+    return pages;
+  };
 
   return (
     <div className={pageShellClass}>
@@ -115,8 +187,6 @@ export default function ArtistAlbums({ isDarkMode = false, onToggleTheme = () =>
           <span>{themeLabel}</span>
         </button>
       </div>
-
-
 
       <div className={`${pageCardClass} max-w-6xl`}>
         <div className={heroPanelClass}>
@@ -186,6 +256,28 @@ export default function ArtistAlbums({ isDarkMode = false, onToggleTheme = () =>
                 </tbody>
               </table>
             </div>
+
+            {lastPage > 1 && (
+              <div className="flex flex-wrap items-center justify-center gap-2 border-t border-slate-200/70 px-4 py-4 dark:border-slate-700/70">
+                <button
+                  type="button"
+                  onClick={() => setPage(currentPageFromData - 1)}
+                  disabled={currentPageFromData === 1}
+                  className={`${paginationButtonClass} disabled:opacity-50`}
+                >
+                  {'前へ'}
+                </button>
+                {renderPages()}
+                <button
+                  type="button"
+                  onClick={() => setPage(currentPageFromData + 1)}
+                  disabled={currentPageFromData === lastPage}
+                  className={`${paginationButtonClass} disabled:opacity-50`}
+                >
+                  {'次へ'}
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

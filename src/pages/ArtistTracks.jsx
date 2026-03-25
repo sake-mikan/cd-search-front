@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom';
 import { Moon, Sun } from 'lucide-react';
 import { buildApiUrl } from '../api/baseUrl';
@@ -13,6 +13,8 @@ import {
   mobileThemeButtonClass,
   pageCardClass,
   pageShellClass,
+  paginationActiveButtonClass,
+  paginationButtonClass,
   primaryButtonClass,
   tableCardClass,
   tableCellClass,
@@ -35,7 +37,7 @@ function formatAlbumTitle(album) {
 
 export default function ArtistTracks({ isDarkMode = false, onToggleTheme = () => {} }) {
   const { id } = useParams();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const role = searchParams.get('role') || '';
 
   const navigate = useNavigate();
@@ -43,10 +45,21 @@ export default function ArtistTracks({ isDarkMode = false, onToggleTheme = () =>
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const [items, setItems] = useState([]);
+  const [lastPage, setLastPage] = useState(1);
+
+  const currentPage = useMemo(() => {
+    const raw = Number.parseInt(searchParams.get('page') ?? '1', 10);
+    return Number.isFinite(raw) && raw > 0 ? raw : 1;
+  }, [searchParams]);
+
   const apiUrl = useMemo(() => {
-    const qs = role ? `?role=${encodeURIComponent(role)}` : '';
-    return buildApiUrl(`/artists/${id}/tracks${qs}`);
-  }, [id, role]);
+    const qs = new URLSearchParams();
+    if (role) qs.set('role', role);
+    qs.set('page', String(currentPage));
+    qs.set('per_page', '20');
+    return buildApiUrl(`/artists/${id}/tracks?${qs.toString()}`);
+  }, [currentPage, id, role]);
 
   const canonicalArtistId = useMemo(() => getArtistRouteId(data?.artist, id), [data?.artist, id]);
 
@@ -57,7 +70,12 @@ export default function ArtistTracks({ isDarkMode = false, onToggleTheme = () =>
     try {
       const res = await fetch(apiUrl, { headers: { Accept: 'application/json' } });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      setData(await res.json());
+      const payload = await res.json();
+      setData(payload);
+
+      const tracks = payload?.tracks;
+      setItems(tracks?.data ?? []);
+      setLastPage(tracks?.last_page ?? 1);
     } catch (e) {
       console.error(e);
       setError('関連楽曲一覧の取得に失敗しました。');
@@ -76,14 +94,74 @@ export default function ArtistTracks({ isDarkMode = false, onToggleTheme = () =>
     if (String(id ?? '').trim() === '') return;
     if (String(id) !== String(data.artist.id ?? '')) return;
     if (String(canonicalArtistId) === '' || String(id) === String(canonicalArtistId)) return;
-    const qs = role ? `?role=${encodeURIComponent(role)}` : '';
-    navigate(`/artists/${canonicalArtistId}/tracks${qs}`, { replace: true });
-  }, [canonicalArtistId, data?.artist, id, navigate, role]);
+    const qs = new URLSearchParams();
+    if (role) qs.set('role', role);
+    if (currentPage > 1) qs.set('page', String(currentPage));
+    const suffix = qs.toString() ? `?${qs.toString()}` : '';
+    navigate(`/artists/${canonicalArtistId}/tracks${suffix}`, { replace: true });
+  }, [canonicalArtistId, currentPage, data?.artist, id, navigate, role]);
 
-  const tracks = data?.tracks?.data ?? [];
+  const tracks = items;
   const artistName = data?.artist?.name ?? `Artist ID: ${id}`;
   const themeLabel = isDarkMode ? 'ライト' : 'ダーク';
   const themeTitle = isDarkMode ? 'ライトモードに切り替え' : 'ダークモードに切り替え';
+
+  const setPage = (page) => {
+    const nextPage = Math.max(1, page);
+    const next = new URLSearchParams(searchParams);
+    if (role) next.set('role', role);
+    if (nextPage === 1) {
+      next.delete('page');
+    } else {
+      next.set('page', String(nextPage));
+    }
+    setSearchParams(next);
+  };
+
+  const renderPages = () => {
+    const pages = [];
+    const addPage = (page) => {
+      pages.push(
+        <button
+          key={page}
+          type="button"
+          onClick={() => setPage(page)}
+          disabled={page === currentPage}
+          className={page === currentPage ? paginationActiveButtonClass : paginationButtonClass}
+        >
+          {page}
+        </button>
+      );
+    };
+
+    const addEllipsis = (key) => {
+      pages.push(
+        <span key={key} className="px-2 py-1 text-slate-500 dark:text-slate-400">
+          ...
+        </span>
+      );
+    };
+
+    const windowSize = 2;
+    const start = Math.max(1, currentPage - windowSize);
+    const end = Math.min(lastPage, currentPage + windowSize);
+
+    if (start > 1) {
+      addPage(1);
+      if (start > 2) addEllipsis('start');
+    }
+
+    for (let page = start; page <= end; page += 1) {
+      addPage(page);
+    }
+
+    if (end < lastPage) {
+      if (end < lastPage - 1) addEllipsis('end');
+      addPage(lastPage);
+    }
+
+    return pages;
+  };
 
   const roleLabel = (value) => {
     if (value === 'vocal') return '歌唱';
@@ -124,8 +202,6 @@ export default function ArtistTracks({ isDarkMode = false, onToggleTheme = () =>
         </button>
       </div>
 
-
-
       <div className={`${pageCardClass} max-w-6xl`}>
         <div className={heroPanelClass}>
           <div className="flex flex-col gap-4">
@@ -153,54 +229,78 @@ export default function ArtistTracks({ isDarkMode = false, onToggleTheme = () =>
         )}
 
         {!loading && !error && (
-          <div className={tableCardClass}>
-            <div className="overflow-x-auto">
-              <table className={tableClass}>
-                <thead>
-                  <tr className={tableHeadRowClass}>
-                    <th className={tableHeadCellClass}>曲名</th>
-                    <th className={tableHeadCellClass}>アルバム</th>
-                    <th className={`${tableHeadCellClass} w-40`}>規格品番</th>
-                    <th className={`${tableHeadCellClass} w-40`}>発売日</th>
-                    <th className={`${tableHeadCellClass} w-40`}>JAN</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {tracks.map((track) => (
-                    <tr key={track.id} className={tableRowClass}>
-                      <td className={`${tableCellClass} font-medium`}>{track.title}</td>
-
-                      <td className={tableCellClass}>
-                        {track.album?.id ? (
-                          <Link
-                            to={getAlbumRoutePath(track.album)}
-                            className="text-blue-600 hover:underline underline-offset-4 dark:text-sky-400"
-                          >
-                            {formatAlbumTitle(track.album)}
-                          </Link>
-                        ) : (
-                          <span className="text-slate-400 dark:text-slate-500">-</span>
-                        )}
-                      </td>
-
-                      <td className={tableCellClass}>{track.album?.catalog_number ?? '-'}</td>
-                      <td className={tableCellClass}>{formatDateDisplay(track.album?.release_date) || '-'}</td>
-                      <td className={tableCellClass}>{track.album?.jan ?? '-'}</td>
+          <>
+            <div className={tableCardClass}>
+              <div className="overflow-x-auto">
+                <table className={tableClass}>
+                  <thead>
+                    <tr className={tableHeadRowClass}>
+                      <th className={tableHeadCellClass}>曲名</th>
+                      <th className={tableHeadCellClass}>アルバム</th>
+                      <th className={`${tableHeadCellClass} w-40`}>規格品番</th>
+                      <th className={`${tableHeadCellClass} w-40`}>発売日</th>
+                      <th className={`${tableHeadCellClass} w-40`}>JAN</th>
                     </tr>
-                  ))}
+                  </thead>
 
-                  {tracks.length === 0 && (
-                    <tr>
-                      <td className={`${tableCellClass} py-6 text-center text-slate-600 dark:text-slate-300`} colSpan={5}>
-                        データがありません
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+                  <tbody>
+                    {tracks.map((track) => (
+                      <tr key={track.id} className={tableRowClass}>
+                        <td className={`${tableCellClass} font-medium`}>{track.title}</td>
+
+                        <td className={tableCellClass}>
+                          {track.album?.id ? (
+                            <Link
+                              to={getAlbumRoutePath(track.album)}
+                              className="text-blue-600 hover:underline underline-offset-4 dark:text-sky-400"
+                            >
+                              {formatAlbumTitle(track.album)}
+                            </Link>
+                          ) : (
+                            <span className="text-slate-400 dark:text-slate-500">-</span>
+                          )}
+                        </td>
+
+                        <td className={tableCellClass}>{track.album?.catalog_number ?? '-'}</td>
+                        <td className={tableCellClass}>{formatDateDisplay(track.album?.release_date) || '-'}</td>
+                        <td className={tableCellClass}>{track.album?.jan ?? '-'}</td>
+                      </tr>
+                    ))}
+
+                    {tracks.length === 0 && (
+                      <tr>
+                        <td className={`${tableCellClass} py-6 text-center text-slate-600 dark:text-slate-300`} colSpan={5}>
+                          データがありません
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
+
+            {lastPage > 1 && (
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className={`${paginationButtonClass} disabled:opacity-50`}
+                >
+                  {'前へ'}
+                </button>
+                {renderPages()}
+                <button
+                  type="button"
+                  onClick={() => setPage(currentPage + 1)}
+                  disabled={currentPage === lastPage}
+                  className={`${paginationButtonClass} disabled:opacity-50`}
+                >
+                  {'次へ'}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
       <SiteFooter />

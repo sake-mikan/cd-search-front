@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Check, Copy, Loader2, Moon, RotateCcw, Sun, Upload, WandSparkles } from 'lucide-react';
+import { Check, Copy, File, FolderOpen, Loader2, Moon, RotateCcw, Sun, WandSparkles } from 'lucide-react';
 import { buildApiUrl } from "../api/baseUrl";
 import SiteFooter from "../components/SiteFooter";
 import { formatInfoTimestamp } from "../utils/formatDateTime";
+import { formatDateDisplay } from "../utils/formatDateDisplay";
 import { getAlbumRouteId, getAlbumRoutePath } from "../utils/albumPublicId";
 import { getArtistAlbumsRoutePath, getArtistTracksRoutePath } from "../utils/artistPublicId";
 
@@ -65,15 +66,6 @@ function releaseYearText(album) {
   if (album?.release_year != null && album.release_year !== '') return String(album.release_year);
   const m = String(album?.release_date ?? '').match(/^(\d{4})/);
   return m ? m[1] : '';
-}
-
-function formatReleaseDateDisplay(value) {
-  const text = String(value ?? '').trim();
-  if (text === '') return '';
-  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) {
-    return text.replace(/-/g, '/');
-  }
-  return text;
 }
 
 function extractTrackNoFromFilename(name) {
@@ -153,11 +145,10 @@ function albumLinkTitle(link) {
 
 function albumEditionOptionLabel(variant) {
   const edition = copyValue(variant?.edition);
-  const catalog = copyValue(variant?.catalog_number);
   if (edition !== '' && edition !== '-') {
-    return catalog !== '' ? `${edition} (${catalog})` : edition;
+    return edition;
   }
-  return catalog !== '' ? `形態なし (${catalog})` : '形態なし';
+  return '\u5f62\u614b\u306a\u3057';
 }
 
 function buildAlbumTitleWithEdition(album, includeEdition = false) {
@@ -1131,7 +1122,7 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
   );
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-3 pb-6 pt-4 sm:p-6 text-gray-900 dark:text-gray-100 relative">
+    <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top,_#eff6ff_0%,_#f8fafc_45%,_#eef2ff_100%)] px-3 pb-6 pt-4 text-gray-900 dark:bg-[radial-gradient(circle_at_top,_#0f172a_0%,_#111827_45%,_#020617_100%)] dark:text-gray-100 sm:p-6">
       <button
         type="button"
         onClick={onToggleTheme}
@@ -1146,7 +1137,7 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
         <button
           type="button"
           onClick={() => navigate('/')}
-          className="inline-flex items-center px-3 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 text-sm"
+          className="inline-flex items-center justify-center gap-2 rounded-full bg-sky-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-sky-700"
         >
           一覧へ戻る
         </button>
@@ -1162,7 +1153,7 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
         </button>
       </div>
 
-      <div className="max-w-7xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow p-4 sm:p-6">
+      <div className="mx-auto max-w-7xl rounded-[28px] bg-white/95 p-4 shadow-xl ring-1 ring-black/5 backdrop-blur dark:bg-gray-800/95 dark:ring-white/10 sm:p-6">
         <div className="grid grid-cols-1 lg:grid-cols-[256px_1fr] gap-5 mb-6 items-start">
           <div className="w-40 sm:w-56 lg:w-64">
             <div className="w-40 h-40 sm:w-56 sm:h-56 lg:w-64 lg:h-64 rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
@@ -1239,7 +1230,7 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
               <div className="grid grid-cols-1 sm:grid-cols-[160px_minmax(0,1fr)] gap-2 items-start border-b border-gray-200/70 dark:border-gray-700/70 py-1">
                 <span className="text-left text-gray-500 dark:text-gray-300">発売日</span>
                 <div className="inline-flex max-w-full items-start gap-2 flex-wrap">
-                  <span className="min-w-0 break-words text-left">{showValue(formatReleaseDateDisplay(album?.release_date))}</span>
+                  <span className="min-w-0 break-words text-left">{showValue(formatDateDisplay(album?.release_date))}</span>
                   <div className="inline-flex items-center gap-2 flex-wrap">
                     {renderCopyIcon(copyValue(album?.release_date), 'album-release-date', '発売日', '発売日をコピー')}
                     {renderCopyIcon(copyValue(releaseYear), 'album-release-year', 'リリース年', 'リリース年のみコピー')}
@@ -1331,18 +1322,18 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
                   type="button"
                   onClick={handleSelectFiles}
                   disabled={!workerReady || isWriting}
-                  className="inline-flex items-center gap-2 px-3 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60"
+                  className="inline-flex items-center gap-2 rounded-2xl border border-emerald-200/80 bg-emerald-100/85 px-3 py-2 text-emerald-900 shadow-sm transition hover:bg-emerald-200/90 disabled:opacity-60 dark:border-emerald-400/20 dark:bg-emerald-500/15 dark:text-emerald-200 dark:hover:bg-emerald-500/22"
                 >
-                  <Upload className="w-4 h-4" />
+                  <File className="h-4 w-4" />
                   ファイル選択
                 </button>
                 <button
                   type="button"
                   onClick={handleSelectFolder}
                   disabled={!workerReady || isWriting}
-                  className="inline-flex items-center gap-2 px-3 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-60"
+                  className="inline-flex items-center gap-2 rounded-2xl border border-violet-200/80 bg-violet-100/85 px-3 py-2 text-violet-900 shadow-sm transition hover:bg-violet-200/90 disabled:opacity-60 dark:border-violet-400/20 dark:bg-violet-500/15 dark:text-violet-200 dark:hover:bg-violet-500/22"
                 >
-                  <Upload className="w-4 h-4" />
+                  <FolderOpen className="h-4 w-4" />
                   フォルダ選択
                 </button>
                 <button
@@ -1355,7 +1346,7 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
                     setIsTagOptionExpanded(false);
                   }}
                   disabled={isWriting}
-                  className="inline-flex items-center gap-2 px-3 py-2 rounded bg-gray-300 dark:bg-gray-700 hover:bg-gray-400 dark:hover:bg-gray-600 disabled:opacity-60"
+                  className="inline-flex items-center gap-2 rounded-2xl bg-slate-200 px-3 py-2 text-slate-700 shadow-sm transition hover:bg-slate-300 disabled:opacity-60 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600"
                 >
                   <RotateCcw className="w-4 h-4" />
                   リセット
@@ -1454,23 +1445,24 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
 
           {support.supported && tagFiles.length > 0 && (
             <div className="mt-4">
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse text-sm">
+              <div className="overflow-hidden rounded-lg border border-slate-200/70 bg-white/70 shadow-sm dark:border-slate-700/70 dark:bg-slate-800/40">
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse text-sm">
                   <thead>
-                    <tr className="bg-gray-200 dark:bg-gray-700">
-                      <th className="border px-2 py-2 text-left min-w-[260px]">ファイル</th>
-                      <th className="border px-2 py-2 text-left min-w-[260px]">割り当てトラック</th>
-                      <th className="border px-2 py-2 text-left min-w-[200px]">状態</th>
+                    <tr className="bg-slate-100 dark:bg-slate-700/80">
+                      <th className="border-b border-r border-slate-200 px-2 py-2 text-left min-w-[260px] last:border-r-0 dark:border-slate-600">ファイル</th>
+                      <th className="border-b border-r border-slate-200 px-2 py-2 text-left min-w-[260px] last:border-r-0 dark:border-slate-600">割り当てトラック</th>
+                      <th className="border-b border-r border-slate-200 px-2 py-2 text-left min-w-[200px] last:border-r-0 dark:border-slate-600">状態</th>
                     </tr>
                   </thead>
                   <tbody>
                     {tagFiles.map((f) => (
-                      <tr key={f.key} className="hover:bg-gray-100 dark:hover:bg-gray-700 align-top">
-                        <td className="border px-2 py-2">
+                      <tr key={f.key} className="align-top hover:bg-slate-50 dark:hover:bg-slate-700/40">
+                        <td className="border-b border-r border-slate-200 px-2 py-2 last:border-r-0 dark:border-slate-600">
                           <div className="font-medium">{f.name}</div>
                           <div className="text-xs text-gray-500 dark:text-gray-400">{formatFileSize(f.size)}</div>
                         </td>
-                        <td className="border px-2 py-2">
+                        <td className="border-b border-r border-slate-200 px-2 py-2 last:border-r-0 dark:border-slate-600">
                           <select
                             value={f.trackId}
                             disabled={isWriting}
@@ -1491,21 +1483,22 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
                             ))}
                           </select>
                         </td>
-                        <td className="border px-2 py-2">
+                        <td className="border-b border-r border-slate-200 px-2 py-2 last:border-r-0 dark:border-slate-600">
                           <div className="font-semibold">{f.status}</div>
                           <div className="text-gray-700 dark:text-gray-300">{f.message}</div>
                         </td>
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                  </table>
+                </div>
               </div>
               <div className="mt-3 flex justify-end">
                 <button
                   type="button"
                   onClick={handleWriteTags}
                   disabled={!support.supported || !workerReady || isWriting || tagFiles.length === 0}
-                  className="inline-flex items-center gap-2 px-3 py-2 rounded bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-60"
+                  className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-3 py-2 text-white hover:bg-emerald-700 disabled:opacity-60"
                 >
                   {isWriting ? <Loader2 className="w-4 h-4 animate-spin" /> : <WandSparkles className="w-4 h-4" />}
                   タグ書き込み
@@ -1523,37 +1516,39 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
             {discGroups.map(([discNo, tracks]) => (
               <section key={`disc-${discNo}`}>
                 <h2 className="text-lg font-semibold mb-2">Disc {discNo}</h2>
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse text-sm">
+                <div className="overflow-hidden rounded-lg border border-slate-200/70 bg-white/70 shadow-sm dark:border-slate-700/70 dark:bg-slate-800/40">
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse text-sm">
                     <thead>
-                      <tr className="bg-gray-200 dark:bg-gray-700">
-                        <th className="border px-3 py-2 text-left w-16">Tr</th>
-                        <th className="border px-3 py-2 text-left min-w-[220px]">曲名</th>
-                        <th className="border px-3 py-2 text-left min-w-[180px]">アーティスト</th>
-                        <th className="border px-3 py-2 text-left min-w-[180px]">作詞</th>
-                        <th className="border px-3 py-2 text-left min-w-[180px]">作曲</th>
-                        <th className="border px-3 py-2 text-left min-w-[180px]">編曲</th>
-                        <th className="border px-3 py-2 text-left min-w-[140px]">ジャンル</th>
-                        <th className="border px-3 py-2 text-left w-24">時間</th>
-                        <th className="border px-3 py-2 text-left min-w-[200px]">コメント</th>
+                      <tr className="bg-slate-100 dark:bg-slate-700/80">
+                        <th className="border-b border-r border-slate-200 px-3 py-2 text-left w-16 last:border-r-0 dark:border-slate-600">Tr</th>
+                        <th className="border-b border-r border-slate-200 px-3 py-2 text-left min-w-[220px] last:border-r-0 dark:border-slate-600">曲名</th>
+                        <th className="border-b border-r border-slate-200 px-3 py-2 text-left min-w-[180px] last:border-r-0 dark:border-slate-600">アーティスト</th>
+                        <th className="border-b border-r border-slate-200 px-3 py-2 text-left min-w-[180px] last:border-r-0 dark:border-slate-600">作詞</th>
+                        <th className="border-b border-r border-slate-200 px-3 py-2 text-left min-w-[180px] last:border-r-0 dark:border-slate-600">作曲</th>
+                        <th className="border-b border-r border-slate-200 px-3 py-2 text-left min-w-[180px] last:border-r-0 dark:border-slate-600">編曲</th>
+                        <th className="border-b border-r border-slate-200 px-3 py-2 text-left min-w-[140px] last:border-r-0 dark:border-slate-600">ジャンル</th>
+                        <th className="border-b border-r border-slate-200 px-3 py-2 text-left w-24 last:border-r-0 dark:border-slate-600">時間</th>
+                        <th className="border-b border-r border-slate-200 px-3 py-2 text-left min-w-[200px] last:border-r-0 dark:border-slate-600">コメント</th>
                       </tr>
                     </thead>
                     <tbody>
                       {tracks.map((track) => (
-                        <tr key={track.id} className="hover:bg-gray-100 dark:hover:bg-gray-700">
-                          <td className="border px-3 py-2">{showValue(track.track_number)}</td>
-                          <td className="border px-3 py-2">{renderTrackField(track.title, `t-${track.id}-title`, '曲名')}</td>
-                          <td className="border px-3 py-2">{renderLinkedPeopleField(track?.credits?.vocal, `t-${track.id}-artist`, 'アーティスト', 'vocal')}</td>
-                          <td className="border px-3 py-2">{renderLinkedPeopleField(track?.credits?.lyricist, `t-${track.id}-lyricist`, '作詞', 'lyricist')}</td>
-                          <td className="border px-3 py-2">{renderLinkedPeopleField(track?.credits?.composer, `t-${track.id}-composer`, '作曲', 'composer')}</td>
-                          <td className="border px-3 py-2">{renderLinkedPeopleField(track?.credits?.arranger, `t-${track.id}-arranger`, '編曲', 'arranger')}</td>
-                          <td className="border px-3 py-2 whitespace-nowrap">{renderTrackField(track.genre, `t-${track.id}-genre`, 'ジャンル')}</td>
-                          <td className="border px-3 py-2">{showValue(track.duration)}</td>
-                          <td className="border px-3 py-2">{renderTrackField(track.comment, `t-${track.id}-comment`, 'コメント')}</td>
+                        <tr key={track.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/40">
+                          <td className="border-b border-r border-slate-200 px-3 py-2 last:border-r-0 dark:border-slate-600">{showValue(track.track_number)}</td>
+                          <td className="border-b border-r border-slate-200 px-3 py-2 last:border-r-0 dark:border-slate-600">{renderTrackField(track.title, `t-${track.id}-title`, '曲名')}</td>
+                          <td className="border-b border-r border-slate-200 px-3 py-2 last:border-r-0 dark:border-slate-600">{renderLinkedPeopleField(track?.credits?.vocal, `t-${track.id}-artist`, 'アーティスト', 'vocal')}</td>
+                          <td className="border-b border-r border-slate-200 px-3 py-2 last:border-r-0 dark:border-slate-600">{renderLinkedPeopleField(track?.credits?.lyricist, `t-${track.id}-lyricist`, '作詞', 'lyricist')}</td>
+                          <td className="border-b border-r border-slate-200 px-3 py-2 last:border-r-0 dark:border-slate-600">{renderLinkedPeopleField(track?.credits?.composer, `t-${track.id}-composer`, '作曲', 'composer')}</td>
+                          <td className="border-b border-r border-slate-200 px-3 py-2 last:border-r-0 dark:border-slate-600">{renderLinkedPeopleField(track?.credits?.arranger, `t-${track.id}-arranger`, '編曲', 'arranger')}</td>
+                          <td className="border-b border-r border-slate-200 px-3 py-2 whitespace-nowrap last:border-r-0 dark:border-slate-600">{renderTrackField(track.genre, `t-${track.id}-genre`, 'ジャンル')}</td>
+                          <td className="border-b border-r border-slate-200 px-3 py-2 last:border-r-0 dark:border-slate-600">{showValue(track.duration)}</td>
+                          <td className="border-b border-r border-slate-200 px-3 py-2 last:border-r-0 dark:border-slate-600">{renderTrackField(track.comment, `t-${track.id}-comment`, 'コメント')}</td>
                         </tr>
                       ))}
                     </tbody>
-                  </table>
+                    </table>
+                  </div>
                 </div>
               </section>
             ))}

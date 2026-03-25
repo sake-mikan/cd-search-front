@@ -11,6 +11,14 @@ export const fetchAlbums = (params) => {
   return api.get('/albums', { params });
 };
 
+export const fetchAlbumSuggestions = async (field, q, limit = 8) => {
+  const response = await api.get('/albums/suggestions', {
+    params: { field, q, limit },
+  });
+
+  return Array.isArray(response.data?.items) ? response.data.items : [];
+};
+
 export const fetchAllAlbums = async (params = {}) => {
   const firstResponse = await fetchAlbums({
     ...params,

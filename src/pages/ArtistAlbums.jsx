@@ -1,20 +1,37 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Moon, Sun } from 'lucide-react';
 import { buildApiUrl } from '../api/baseUrl';
 import SiteFooter from '../components/SiteFooter';
 import { getAlbumRoutePath } from '../utils/albumPublicId';
+import { formatDateDisplay } from '../utils/formatDateDisplay';
+import {
+  PageBackdrop,
+  floatingThemeButtonClass,
+  heroPanelClass,
+  mobileThemeButtonClass,
+  pageCardClass,
+  pageShellClass,
+  primaryButtonClass,
+  tableCardClass,
+  tableCellClass,
+  tableClass,
+  tableHeadCellClass,
+  tableHeadRowClass,
+  tableRowClass,
+} from '../utils/uiTheme';
 
 function formatAlbumTitle(album) {
   const title = String(album?.title ?? '').trim();
   const edition = String(album?.edition ?? '').trim();
 
   if (edition !== '' && edition !== '-') {
-    return title !== '' ? `${title}\u3010${edition}\u3011` : `\u3010${edition}\u3011`;
+    return title !== '' ? `${title}【${edition}】` : `【${edition}】`;
   }
 
   return title;
 }
+
 function membersText(value) {
   if (!Array.isArray(value)) return '';
   return value
@@ -56,6 +73,7 @@ export default function ArtistAlbums({ isDarkMode = false, onToggleTheme = () =>
   const canonicalArtistId = String(data?.artist?.public_id ?? data?.artist?.id ?? '').trim();
   const artistName = data?.artist?.name ?? `Artist ID: ${id}`;
   const isUnit = String(data?.artist?.type ?? '') === 'unit';
+
   useEffect(() => {
     if (!canonicalArtistId) return;
     if (String(id ?? '').trim() === '') return;
@@ -68,11 +86,13 @@ export default function ArtistAlbums({ isDarkMode = false, onToggleTheme = () =>
   const themeTitle = isDarkMode ? 'ライトモードに切り替え' : 'ダークモードに切り替え';
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 px-3 pb-6 pt-4 sm:p-6 text-gray-900 dark:text-gray-100 relative">
+    <div className={pageShellClass}>
+      <PageBackdrop />
+
       <button
         type="button"
         onClick={onToggleTheme}
-        className="absolute right-3 top-4 z-10 hidden lg:inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-700 shadow hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700 sm:right-6 sm:top-6"
+        className={floatingThemeButtonClass}
         title={themeTitle}
         aria-label={themeTitle}
       >
@@ -80,95 +100,92 @@ export default function ArtistAlbums({ isDarkMode = false, onToggleTheme = () =>
         <span>{themeLabel}</span>
       </button>
 
-      <div className="max-w-6xl mx-auto bg-white dark:bg-gray-800 rounded-xl shadow p-4 sm:p-6">
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">{artistName} のアルバム一覧</h1>
-            {isUnit && (
-              <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-                この画面では、ユニット名で登録されているアルバムと、そのアルバム時点の所属メンバーを確認できます。
-              </p>
-            )}
-          </div>
+      <div className="mx-auto mb-3 flex max-w-6xl items-center justify-between gap-2 lg:justify-start">
+        <button type="button" onClick={() => navigate(-1)} className={primaryButtonClass}>
+          戻る
+        </button>
+        <button
+          type="button"
+          onClick={onToggleTheme}
+          className={`${mobileThemeButtonClass} lg:hidden`}
+          title={themeTitle}
+          aria-label={themeTitle}
+        >
+          {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+          <span>{themeLabel}</span>
+        </button>
+      </div>
 
-          <div className="flex items-center gap-2 self-start">
-            <button
-              type="button"
-              onClick={onToggleTheme}
-              className="inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-700 shadow hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700 lg:hidden"
-              title={themeTitle}
-              aria-label={themeTitle}
-            >
-              {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
-              <span>{themeLabel}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate(-1)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            >
-              戻る
-            </button>
+
+
+      <div className={`${pageCardClass} max-w-6xl`}>
+        <div className={heroPanelClass}>
+          <div className="flex flex-col gap-4">
+            <div className="space-y-2">
+              <h1 className="text-2xl font-bold tracking-tight sm:text-[2rem]">{artistName} のアルバム一覧</h1>
+              {isUnit && (
+                <p className="max-w-3xl text-sm leading-6 text-slate-600 dark:text-slate-300">
+                  この画面では、ユニット名で登録されているアルバムと、そのアルバム単位のユニットメンバーを確認できます。
+                </p>
+              )}
+            </div>
           </div>
         </div>
 
         {loading && (
-          <div className="mt-6 p-4 rounded bg-gray-100 dark:bg-gray-700">読み込み中...</div>
+          <div className="rounded-[24px] border border-slate-200/70 bg-white/80 px-4 py-5 text-sm text-slate-600 shadow-sm dark:border-slate-700/70 dark:bg-slate-800/70 dark:text-slate-300 sm:px-5">
+            読み込み中...
+          </div>
         )}
 
         {error && (
-          <div className="mt-6 p-4 rounded bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-200">
+          <div className="rounded-[24px] border border-red-200 bg-red-50 px-4 py-5 text-sm text-red-700 shadow-sm dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200 sm:px-5">
             {error}
           </div>
         )}
 
         {!loading && !error && (
-          <div className="mt-6 overflow-x-auto">
-            <table className="w-full border-collapse text-sm">
-              <thead>
-                <tr className="bg-gray-200 dark:bg-gray-700">
-                  <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left">{'\u30a2\u30eb\u30d0\u30e0'}</th>
-                  <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left w-40">{'\u898f\u683c\u54c1\u756a'}</th>
-                  <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left w-40">{'\u767a\u58f2\u65e5'}</th>
-                  <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left w-40">JAN</th>
-                  {isUnit && <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left">{'\u30e6\u30cb\u30c3\u30c8\u30e1\u30f3\u30d0\u30fc'}</th>}
-                </tr>
-              </thead>
+          <div className={tableCardClass}>
+            <div className="overflow-x-auto">
+              <table className={tableClass}>
+                <thead>
+                  <tr className={tableHeadRowClass}>
+                    <th className={tableHeadCellClass}>アルバム</th>
+                    <th className={`${tableHeadCellClass} w-40`}>規格品番</th>
+                    <th className={`${tableHeadCellClass} w-40`}>発売日</th>
+                    <th className={`${tableHeadCellClass} w-40`}>JAN</th>
+                    {isUnit && <th className={tableHeadCellClass}>ユニットメンバー</th>}
+                  </tr>
+                </thead>
 
-              <tbody>
-                {albums.map((album) => (
-                  <tr key={album.id} className="hover:bg-gray-100 dark:hover:bg-gray-700">
-                    <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
-                      <Link
-                        to={getAlbumRoutePath(album)}
-                        className="text-blue-600 dark:text-sky-400 hover:underline underline-offset-4"
-                      >
-                        {formatAlbumTitle(album)}
-                      </Link>
-                    </td>
-                    <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">{album.catalog_number ?? '-'}</td>
-                    <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">{album.release_date ?? '-'}</td>
-                    <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">{album.jan ?? '-'}</td>
-                    {isUnit && (
-                      <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
-                        {membersText(album.unit_members) || '-'}
+                <tbody>
+                  {albums.map((album) => (
+                    <tr key={album.id} className={tableRowClass}>
+                      <td className={tableCellClass}>
+                        <Link
+                          to={getAlbumRoutePath(album)}
+                          className="text-blue-600 hover:underline underline-offset-4 dark:text-sky-400"
+                        >
+                          {formatAlbumTitle(album)}
+                        </Link>
                       </td>
-                    )}
-                  </tr>
-                ))}
+                      <td className={tableCellClass}>{album.catalog_number ?? '-'}</td>
+                      <td className={tableCellClass}>{formatDateDisplay(album.release_date) || '-'}</td>
+                      <td className={tableCellClass}>{album.jan ?? '-'}</td>
+                      {isUnit && <td className={tableCellClass}>{membersText(album.unit_members) || '-'}</td>}
+                    </tr>
+                  ))}
 
-                {albums.length === 0 && (
-                  <tr>
-                    <td
-                      className="border border-gray-300 dark:border-gray-600 px-3 py-6 text-center text-gray-600 dark:text-gray-300"
-                      colSpan={isUnit ? 5 : 4}
-                    >
-                      データがありません
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                  {albums.length === 0 && (
+                    <tr>
+                      <td className={`${tableCellClass} py-6 text-center text-slate-600 dark:text-slate-300`} colSpan={isUnit ? 5 : 4}>
+                        データがありません
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

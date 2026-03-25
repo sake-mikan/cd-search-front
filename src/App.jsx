@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Routes, Route, Link } from 'react-router-dom';
 import { ArrowDown, ArrowUp, ArrowUpDown, CalendarRange, Moon, RefreshCcw, Sparkles, Sun } from 'lucide-react';
-import { fetchAllAlbums } from './api/albums';
+import { fetchAllAlbums, fetchAlbumSuggestions } from './api/albums';
 import AlbumDetail from './pages/AlbumDetail';
 import AlbumCorrectionRequest from './pages/AlbumCorrectionRequest';
 import ArtistTracks from './pages/ArtistTracks';
@@ -10,6 +10,7 @@ import SeriesAlbums from './pages/SeriesAlbums';
 import TrackSearch from './pages/TrackSearch';
 import SiteFooter from './components/SiteFooter';
 import { getAlbumRoutePath } from './utils/albumPublicId';
+import { formatDateDisplay } from './utils/formatDateDisplay';
 
 const SEARCH_PAGE_SIZE = 20;
 const FEATURED_TILE_LIMIT = 12;
@@ -158,6 +159,10 @@ function App() {
   const [featuredLoading, setFeaturedLoading] = useState(false);
   const [featuredError, setFeaturedError] = useState('');
   const [featuredRangeLabel, setFeaturedRangeLabel] = useState('');
+  const [hasSearched, setHasSearched] = useState(false);
+  const [titleSuggestions, setTitleSuggestions] = useState([]);
+  const [artistSuggestions, setArtistSuggestions] = useState([]);
+  const [catalogSuggestions, setCatalogSuggestions] = useState([]);
 
   const [sort, setSort] = useState('release_date');
   const [order, setOrder] = useState('desc');
@@ -289,6 +294,75 @@ function App() {
     loadFeaturedAlbums();
   }, [featuredRefreshKey]);
 
+  useEffect(() => {
+    const query = title.trim();
+    if (query === '') {
+      setTitleSuggestions([]);
+      return undefined;
+    }
+
+    let active = true;
+    const timer = window.setTimeout(async () => {
+      try {
+        const items = await fetchAlbumSuggestions('title', query, 8);
+        if (active) setTitleSuggestions(items);
+      } catch {
+        if (active) setTitleSuggestions([]);
+      }
+    }, 180);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [title]);
+
+  useEffect(() => {
+    const query = artist.trim();
+    if (query === '') {
+      setArtistSuggestions([]);
+      return undefined;
+    }
+
+    let active = true;
+    const timer = window.setTimeout(async () => {
+      try {
+        const items = await fetchAlbumSuggestions('artist', query, 8);
+        if (active) setArtistSuggestions(items);
+      } catch {
+        if (active) setArtistSuggestions([]);
+      }
+    }, 180);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [artist]);
+
+  useEffect(() => {
+    const query = catalogNumber.trim();
+    if (query === '') {
+      setCatalogSuggestions([]);
+      return undefined;
+    }
+
+    let active = true;
+    const timer = window.setTimeout(async () => {
+      try {
+        const items = await fetchAlbumSuggestions('catalog_number', query, 8);
+        if (active) setCatalogSuggestions(items);
+      } catch {
+        if (active) setCatalogSuggestions([]);
+      }
+    }, 180);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [catalogNumber]);
+
   const toggleTheme = () => {
     const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     const currentDark = themeMode === 'dark' || (themeMode === 'system' && systemDark);
@@ -296,7 +370,7 @@ function App() {
   };
 
   const changePage = (page) => {
-    if (isEmptySearch()) return;
+    if (!hasSearched) return;
     if (page < 1 || page > lastPage) return;
     setCurrentPage(page);
   };
@@ -319,10 +393,10 @@ function App() {
   };
 
   const sortableHeaderClass =
-    'border px-3 py-2 text-sm whitespace-nowrap cursor-pointer select-none hover:bg-gray-300/60 dark:hover:bg-gray-600/70';
+    'border border-slate-200 px-3 py-2 text-sm font-semibold whitespace-nowrap cursor-pointer select-none hover:bg-slate-200/80 dark:border-slate-600 dark:hover:bg-slate-600/80';
 
   const renderPages = () => {
-    if (isEmptySearch()) return null;
+    if (!hasSearched) return null;
 
     const pages = [];
     const addPage = (i) => {
@@ -331,11 +405,7 @@ function App() {
           key={i}
           onClick={() => changePage(i)}
           disabled={i === currentPage}
-          className={`px-3 py-1 rounded border ${
-            i === currentPage
-              ? 'bg-blue-600 text-white cursor-default'
-              : 'bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600'
-          }`}
+          className={`rounded-full px-3 py-1 ${i === currentPage ? 'bg-sky-600 text-white cursor-default' : 'bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600'}` }
         >
           {i}
         </button>
@@ -344,7 +414,7 @@ function App() {
 
     const addEllipsis = (key) => {
       pages.push(
-        <span key={key} className="px-2 py-1 text-gray-500 dark:text-gray-400">
+        <span key={key} className="px-2 py-1 text-slate-500 dark:text-slate-400">
           ...
         </span>
       );
@@ -378,6 +448,10 @@ function App() {
     setCatalogNumber('');
     setReleaseDate('');
     setArtist('');
+    setTitleSuggestions([]);
+    setArtistSuggestions([]);
+    setCatalogSuggestions([]);
+    setHasSearched(false);
     setAlbums([]);
     setCurrentPage(1);
     setLastPage(1);
@@ -392,7 +466,7 @@ function App() {
 
   const themeLabel = isDarkMode ? 'ライト' : 'ダーク';
   const themeTitle = isDarkMode ? 'ライトモードに切り替え' : 'ダークモードに切り替え';
-  const isInitialView = isEmptySearch();
+  const isInitialView = !hasSearched;
   return (
     <>
       <Routes>
@@ -446,9 +520,9 @@ function App() {
                       </button>
                       <Link
                         to="/tracks"
-                        className="inline-flex items-center justify-center rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700 dark:bg-sky-500 dark:text-slate-950 dark:hover:bg-sky-400"
+                        className="inline-flex items-center justify-center rounded-full bg-sky-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-sky-700"
                       >
-                        曲検索へ
+                        楽曲名検索
                       </Link>
                     </div>
                   </div>
@@ -456,30 +530,65 @@ function App() {
                   <form
                     onSubmit={(e) => {
                       e.preventDefault();
+                      if (isEmptySearch()) {
+                        setHasSearched(false);
+                        setAlbums([]);
+                        setCurrentPage(1);
+                        setLastPage(1);
+                        setError('');
+                        setResultCount(0);
+                        setResultLimited(false);
+                        return;
+                      }
+                      setHasSearched(true);
                       loadAlbums(1);
                     }}
                     className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-5"
                   >
-                    <input
-                      className="rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-sm shadow-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-200 dark:border-slate-600 dark:bg-slate-800/90"
-                      placeholder="タイトル"
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                    />
+                    <>
+                      <input
+                        list="album-title-suggestions"
+                        className="rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-sm shadow-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-200 dark:border-slate-600 dark:bg-slate-800/90"
+                        placeholder="タイトル"
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                      />
+                      <datalist id="album-title-suggestions">
+                        {titleSuggestions.map((item) => (
+                          <option key={item} value={item} />
+                        ))}
+                      </datalist>
+                    </>
 
-                    <input
-                      className="rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-sm shadow-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-200 dark:border-slate-600 dark:bg-slate-800/90"
-                      placeholder="アーティスト"
-                      value={artist}
-                      onChange={(e) => setArtist(e.target.value)}
-                    />
+                    <>
+                      <input
+                        list="album-artist-suggestions"
+                        className="rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-sm shadow-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-200 dark:border-slate-600 dark:bg-slate-800/90"
+                        placeholder="アーティスト"
+                        value={artist}
+                        onChange={(e) => setArtist(e.target.value)}
+                      />
+                      <datalist id="album-artist-suggestions">
+                        {artistSuggestions.map((item) => (
+                          <option key={item} value={item} />
+                        ))}
+                      </datalist>
+                    </>
 
-                    <input
-                      className="rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-sm shadow-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-200 dark:border-slate-600 dark:bg-slate-800/90"
-                      placeholder="規格品番"
-                      value={catalogNumber}
-                      onChange={(e) => setCatalogNumber(e.target.value)}
-                    />
+                    <>
+                      <input
+                        list="album-catalog-suggestions"
+                        className="rounded-2xl border border-slate-200 bg-white/90 px-4 py-3 text-sm shadow-sm outline-none transition focus:border-sky-400 focus:ring-2 focus:ring-sky-200 dark:border-slate-600 dark:bg-slate-800/90"
+                        placeholder="規格品番"
+                        value={catalogNumber}
+                        onChange={(e) => setCatalogNumber(e.target.value)}
+                      />
+                      <datalist id="album-catalog-suggestions">
+                        {catalogSuggestions.map((item) => (
+                          <option key={item} value={item} />
+                        ))}
+                      </datalist>
+                    </>
 
                     <input
                       type="date"
@@ -510,13 +619,13 @@ function App() {
                   <section className="mb-8 rounded-[24px] border border-slate-200/70 bg-gradient-to-br from-slate-50 via-white to-sky-50/70 p-4 shadow-sm dark:border-slate-700/70 dark:from-slate-800 dark:via-slate-800 dark:to-slate-900 sm:p-5">
                     <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                       <div className="space-y-2">
-                        <p className="inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-[11px] font-medium tracking-[0.18em] text-slate-700 shadow-sm dark:bg-slate-700/80 dark:text-slate-100">
+                        <p className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-3 py-1 text-[11px] font-medium tracking-[0.18em] text-white dark:bg-white dark:text-slate-900">
                           <CalendarRange className="h-3.5 w-3.5" />
                           UPCOMING PICKUP
                         </p>
-                        <div>
-                          <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">Upcoming CDs</h2>
-                          <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                        <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:gap-3">
+                          <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">New Release</h2>
+                          <p className="text-sm text-slate-600 dark:text-slate-300">
                             {featuredRangeLabel}
                           </p>
                         </div>
@@ -565,17 +674,22 @@ function App() {
                             className="group relative isolate flex min-h-[300px] overflow-hidden rounded-[24px] border border-slate-900/10 bg-slate-950 shadow-lg transition duration-300 hover:-translate-y-1 hover:shadow-2xl dark:border-white/10"
                           >
                             {album.cover_image_url ? (
-                              <img
-                                src={album.cover_image_url}
-                                alt={formatAlbumListTitle(album)}
-                                loading="lazy"
-                                decoding="async"
-                                className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-105"
-                              />
+                              <div className="absolute inset-0 overflow-hidden rounded-[24px]">
+                                <img
+                                  src={album.cover_image_url}
+                                  alt={formatAlbumListTitle(album)}
+                                  loading="lazy"
+                                  decoding="async"
+                                  className="h-full w-full object-cover transition duration-500 will-change-transform group-hover:scale-105"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/10" />
+                              </div>
                             ) : (
-                              <div className="absolute inset-0 bg-gradient-to-br from-slate-700 via-slate-800 to-slate-950" />
+                              <div className="absolute inset-0 overflow-hidden rounded-[24px]">
+                                <div className="absolute inset-0 bg-gradient-to-br from-slate-700 via-slate-800 to-slate-950" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/10" />
+                              </div>
                             )}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-black/10" />
                             <div className="relative flex h-full w-full flex-col justify-between p-4">
                               <div className="flex items-start justify-between gap-3">
                                 <span className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-black/30 px-3 py-1 text-[11px] font-medium text-white/90 backdrop-blur-sm">
@@ -610,11 +724,12 @@ function App() {
                 )}
 
                 {!isInitialView && (
-                  <div className="overflow-x-auto">
-                    <table className="w-full min-w-[760px] border-collapse text-sm">
+                  <div className="overflow-hidden rounded-[24px] border border-slate-200/70 bg-white/90 shadow-sm dark:border-slate-700/70 dark:bg-slate-800/90">
+                    <div className="overflow-x-auto">
+                      <table className="w-full min-w-[760px] border-collapse text-sm">
                       <thead>
-                        <tr className="bg-gray-200 dark:bg-gray-700">
-                          <th className="border px-3 py-2 w-20 text-sm whitespace-nowrap">ジャケット</th>
+                        <tr className="bg-slate-100 dark:bg-slate-700/80">
+                          <th className="border-b border-r border-slate-200 px-3 py-2 w-20 text-sm font-semibold whitespace-nowrap last:border-r-0 dark:border-slate-600">ジャケット</th>
                           <th className={sortableHeaderClass}>
                             <button
                               type="button"
@@ -664,8 +779,8 @@ function App() {
 
                       <tbody>
                         {visibleAlbums.map((a) => (
-                          <tr key={a.id} className="hover:bg-gray-100 dark:hover:bg-gray-700">
-                            <td className="border px-2 py-2">
+                          <tr key={a.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/40">
+                            <td className="border-b border-r border-slate-200 px-2 py-2 last:border-r-0 dark:border-slate-600">
                               <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden flex items-center justify-center">
                                 {a.cover_image_url ? (
                                   <img
@@ -689,7 +804,7 @@ function App() {
                               </div>
                             </td>
 
-                            <td className="border px-4 py-2">
+                            <td className="border-b border-r border-slate-200 px-4 py-2 last:border-r-0 dark:border-slate-600">
                               <Link
                                 to={getAlbumRoutePath(a)}
                                 state={{ title: a.title }}
@@ -699,13 +814,14 @@ function App() {
                               </Link>
                             </td>
 
-                            <td className="border px-4 py-2">{a.album_artist?.name ?? '-'}</td>
-                            <td className="border px-4 py-2 whitespace-nowrap w-[9.5rem]">{a.catalog_number}</td>
-                            <td className="border px-4 py-2 whitespace-nowrap w-[8.5rem]">{a.release_date}</td>
+                            <td className="border-b border-r border-slate-200 px-4 py-2 last:border-r-0 dark:border-slate-600">{a.album_artist?.name ?? '-'}</td>
+                            <td className="border-b border-r border-slate-200 px-4 py-2 whitespace-nowrap w-[9.5rem] last:border-r-0 dark:border-slate-600">{a.catalog_number}</td>
+                            <td className="border-b border-r border-slate-200 px-4 py-2 whitespace-nowrap w-[8.5rem] last:border-r-0 dark:border-slate-600">{formatDateDisplay(a.release_date) || '-'}</td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
+                  </div>
                   </div>
                 )}
 
@@ -714,7 +830,7 @@ function App() {
                     <button
                       onClick={() => changePage(currentPage - 1)}
                       disabled={currentPage === 1}
-                      className="px-3 py-1 border rounded disabled:opacity-50"
+                      className="rounded-full bg-slate-200 px-3 py-1 text-slate-700 hover:bg-slate-300 disabled:opacity-50 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600"
                     >
                       前へ
                     </button>
@@ -724,7 +840,7 @@ function App() {
                     <button
                       onClick={() => changePage(currentPage + 1)}
                       disabled={currentPage === lastPage}
-                      className="px-3 py-1 border rounded disabled:opacity-50"
+                      className="rounded-full bg-slate-200 px-3 py-1 text-slate-700 hover:bg-slate-300 disabled:opacity-50 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600"
                     >
                       次へ
                     </button>

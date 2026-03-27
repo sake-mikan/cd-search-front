@@ -35,6 +35,11 @@ function formatAlbumTitle(album) {
   return title;
 }
 
+function formatTrackDisc(track) {
+  const trackNumber = Number.isFinite(Number(track?.track_number)) ? String(track.track_number) : '-';
+  const discNumber = Number.isFinite(Number(track?.disk_number)) ? String(track.disk_number) : '-';
+  return `${trackNumber} / ${discNumber}`;
+}
 export default function ArtistTracks({ isDarkMode = false, onToggleTheme = () => {} }) {
   const { id } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -237,9 +242,9 @@ export default function ArtistTracks({ isDarkMode = false, onToggleTheme = () =>
                     <tr className={tableHeadRowClass}>
                       <th className={tableHeadCellClass}>曲名</th>
                       <th className={tableHeadCellClass}>アルバム</th>
+                      <th className={`${tableHeadCellClass} w-32`}>Tr / Disc</th>
                       <th className={`${tableHeadCellClass} w-40`}>規格品番</th>
                       <th className={`${tableHeadCellClass} w-40`}>発売日</th>
-                      <th className={`${tableHeadCellClass} w-40`}>JAN</th>
                     </tr>
                   </thead>
 
@@ -261,9 +266,9 @@ export default function ArtistTracks({ isDarkMode = false, onToggleTheme = () =>
                           )}
                         </td>
 
+                        <td className={tableCellClass}>{formatTrackDisc(track)}</td>
                         <td className={tableCellClass}>{track.album?.catalog_number ?? '-'}</td>
                         <td className={tableCellClass}>{formatDateDisplay(track.album?.release_date) || '-'}</td>
-                        <td className={tableCellClass}>{track.album?.jan ?? '-'}</td>
                       </tr>
                     ))}
 

@@ -39,6 +39,8 @@ const LABELS = {
   informationTimestamp: '\u60C5\u5831\u6642\u70B9',
   fieldKey: '\u4FEE\u6B63\u3057\u3066\u307B\u3057\u3044\u9805\u76EE',
   sourceUrl: '\u60C5\u5831\u30BD\u30FC\u30B9URL',
+  requesterName: '\u9001\u4FE1\u8005\u540D\uFF08\u30CB\u30C3\u30AF\u30CD\u30FC\u30E0\u53EF\uFF09',
+  requesterNamePlaceholder: '\u4EFB\u610F\u5165\u529B',
   comment: '\u8A73\u7D30\u30B3\u30E1\u30F3\u30C8',
   commentPlaceholder:
     '\u3069\u306E\u60C5\u5831\u3092\u3069\u3046\u76F4\u3057\u3066\u307B\u3057\u3044\u304B\u3092\u8A73\u3057\u304F\u8A18\u8F09\u3057\u3066\u304F\u3060\u3055\u3044\u3002\u53C2\u8003\u306B\u306A\u308B\u30C8\u30E9\u30C3\u30AF\u756A\u53F7\u3084\u88DC\u8DB3\u3082\u3042\u308C\u3070\u8A18\u8F09\u3057\u3066\u304F\u3060\u3055\u3044\u3002',
@@ -61,6 +63,7 @@ const LABELS = {
 const INITIAL_FORM = {
   field_key: '',
   source_url: '',
+  requester_name: '',
   comment: '',
   nickname: '',
 };
@@ -282,6 +285,7 @@ export default function AlbumCorrectionRequest({ isDarkMode = false, onToggleThe
       const response = await submitAlbumCorrectionRequest(id, {
         field_key: form.field_key,
         source_url: form.source_url,
+        requester_name: form.requester_name,
         comment: form.comment,
         turnstile_token: turnstileToken,
         nickname: form.nickname,
@@ -376,7 +380,7 @@ export default function AlbumCorrectionRequest({ isDarkMode = false, onToggleThe
         <form onSubmit={handleSubmit} className="mt-5 space-y-5">
           <div className="grid gap-5 sm:grid-cols-2">
             <label className="block text-sm">
-              <span className="mb-2 block font-medium">{LABELS.fieldKey}</span>
+              <span className="mb-2 block font-medium">{LABELS.fieldKey}<span className="ml-1 text-red-500">*</span></span>
               <select
                 name="field_key"
                 value={form.field_key}
@@ -406,8 +410,21 @@ export default function AlbumCorrectionRequest({ isDarkMode = false, onToggleThe
             </label>
           </div>
 
+
+          <label className="block text-sm sm:max-w-[360px]">
+            <span className="mb-2 block font-medium">{LABELS.requesterName}</span>
+            <input
+              type="text"
+              name="requester_name"
+              value={form.requester_name}
+              onChange={handleChange}
+              disabled={loading || submitting}
+              placeholder={LABELS.requesterNamePlaceholder}
+              className={inputClass}
+            />
+          </label>
           <label className="block text-sm">
-            <span className="mb-2 block font-medium">{LABELS.comment}</span>
+            <span className="mb-2 block font-medium">{LABELS.comment}<span className="ml-1 text-red-500">*</span></span>
             <textarea
               name="comment"
               value={form.comment}
@@ -422,7 +439,7 @@ export default function AlbumCorrectionRequest({ isDarkMode = false, onToggleThe
           <div className={panelMutedClass}>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <div className="text-sm font-medium">{LABELS.robotCheck}</div>
+                <div className="text-sm font-medium">{LABELS.robotCheck}<span className="ml-1 text-red-500">*</span></div>
                 {!turnstileEnabled && (
                   <div className="mt-1 text-sm text-slate-500 dark:text-slate-300">{LABELS.turnstileMissing}</div>
                 )}

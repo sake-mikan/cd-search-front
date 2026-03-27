@@ -669,6 +669,8 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
   }, [album?.id, hasCoverImage, hasEdition, hasMultipleEditionVariants]);
 
   const albumTitleText = useMemo(() => copyValue(album?.title), [album?.title]);
+  const titleContextText = useMemo(() => copyValue(album?.title_context), [album?.title_context]);
+  const albumCommentText = useMemo(() => copyValue(album?.comment), [album?.comment]);
 
   const albumTitleEditionText = useMemo(() => {
     const title = copyValue(album?.title);
@@ -1202,6 +1204,20 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
               </div>
             </div>
 
+            {(titleContextText !== '' || albumCommentText !== '') && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {titleContextText !== '' && (
+                  <div className="border-b border-gray-200/70 py-1 text-sm font-semibold leading-relaxed text-gray-700 dark:border-gray-700/70 dark:text-gray-100">
+                    {titleContextText}
+                  </div>
+                )}
+                {albumCommentText !== '' && (
+                  <div className="border-b border-gray-200/70 py-1 text-sm font-semibold leading-relaxed text-gray-700 dark:border-gray-700/70 dark:text-gray-100 whitespace-pre-wrap break-words">
+                    {albumCommentText}
+                  </div>
+                )}
+              </div>
+            )}
             <div className="grid grid-cols-1 sm:grid-cols-[160px_minmax(0,1fr)] gap-2 items-start border-b border-gray-200/70 dark:border-gray-700/70 py-1">
               <span className="text-left text-gray-500 dark:text-gray-300">アルバムアーティスト</span>
               <div className="inline-flex max-w-full items-start gap-2">
@@ -1245,6 +1261,7 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
                 </div>
               </div>
             </div>
+
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               <div className="grid grid-cols-1 sm:grid-cols-[160px_minmax(0,1fr)] gap-2 items-start border-b border-gray-200/70 dark:border-gray-700/70 py-1">

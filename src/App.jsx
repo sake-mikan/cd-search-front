@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Routes, Route, Link } from 'react-router-dom';
 import { ArrowDown, ArrowUp, ArrowUpDown, CalendarRange, Moon, RefreshCcw, Sparkles, Sun } from 'lucide-react';
 import { fetchAllAlbums, fetchAlbumSuggestions } from './api/albums';
@@ -8,6 +8,7 @@ import ArtistTracks from './pages/ArtistTracks';
 import ArtistAlbums from './pages/ArtistAlbums';
 import SeriesAlbums from './pages/SeriesAlbums';
 import TrackSearch from './pages/TrackSearch';
+import ContentSearch from './pages/ContentSearch';
 import SiteFooter from './components/SiteFooter';
 import { getAlbumRoutePath } from './utils/albumPublicId';
 import { formatDateDisplay } from './utils/formatDateDisplay';
@@ -464,8 +465,8 @@ function App() {
     setFeaturedRefreshKey((value) => value + 1);
   };
 
-  const themeLabel = isDarkMode ? 'ライト' : 'ダーク';
-  const themeTitle = isDarkMode ? 'ライトモードに切り替え' : 'ダークモードに切り替え';
+  const themeLabel = isDarkMode ? '\u30e9\u30a4\u30c8' : '\u30c0\u30fc\u30af';
+  const themeTitle = isDarkMode ? '\u30e9\u30a4\u30c8\u30e2\u30fc\u30c9\u306b\u5207\u308a\u66ff\u3048' : '\u30c0\u30fc\u30af\u30e2\u30fc\u30c9\u306b\u5207\u308a\u66ff\u3048';
   const isInitialView = !hasSearched;
   return (
     <>
@@ -524,6 +525,12 @@ function App() {
                       >
                         楽曲名検索
                       </Link>
+                      <Link
+                        to="/contents"
+                        className="inline-flex items-center justify-center rounded-full bg-slate-200 px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600"
+                      >
+                        {'\u4f5c\u54c1\u304b\u3089\u63a2\u3059'}
+                      </Link>
                     </div>
                   </div>
 
@@ -574,6 +581,7 @@ function App() {
                         ))}
                       </datalist>
                     </>
+
 
                     <>
                       <input
@@ -871,6 +879,10 @@ function App() {
         <Route
           path="/series/:id/albums"
           element={<SeriesAlbums isDarkMode={isDarkMode} onToggleTheme={toggleTheme} />}
+        />
+        <Route
+          path="/contents"
+          element={<ContentSearch isDarkMode={isDarkMode} onToggleTheme={toggleTheme} />}
         />
         <Route
           path="/tracks"

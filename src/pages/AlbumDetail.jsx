@@ -655,6 +655,8 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
   const hasMultipleEditionVariants = editionVariants.length > 1;
   const seriesName = useMemo(() => String(album?.series?.name ?? '').trim(), [album?.series?.name]);
   const shouldShowSeries = Boolean(album?.series?.id) && seriesName !== '';
+  const contentName = useMemo(() => String(album?.content?.name ?? '').trim(), [album?.content?.name]);
+  const shouldShowContent = Boolean(album?.content?.id) && contentName !== '';
   const shouldShowEditionInAlbumNameOption = hasEdition;
   const albumTitleForTags = useMemo(
     () => buildAlbumTitleWithEdition(album, includeEditionInAlbumName),
@@ -1290,6 +1292,15 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
                     {showValue(seriesName)}
                   </Link>
                   {renderCopyIcon(copyValue(seriesName), 'album-series', 'シリーズ')}
+                </div>
+              </div>
+            )}
+            {shouldShowContent && (
+              <div className="grid grid-cols-1 sm:grid-cols-[160px_minmax(0,1fr)] gap-2 items-start border-b border-gray-200/70 dark:border-gray-700/70 py-1">
+                <span className="text-left text-gray-500 dark:text-gray-300">コンテンツ</span>
+                <div className="inline-flex max-w-full items-start gap-2">
+                  <span className="min-w-0 break-words text-left">{showValue(contentName)}</span>
+                  {renderCopyIcon(copyValue(contentName), 'album-content', 'コンテンツ')}
                 </div>
               </div>
             )}

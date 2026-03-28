@@ -1,4 +1,4 @@
-﻿import axios from 'axios';
+import axios from 'axios';
 import { getApiBaseUrl } from './baseUrl';
 
 const api = axios.create({
@@ -58,4 +58,9 @@ export const fetchAllAlbums = async (params = {}) => {
     ...firstPage,
     data: [...firstItems, ...remainingItems],
   };
+};
+
+export const fetchContents = async () => {
+  const response = await api.get('/contents');
+  return Array.isArray(response.data?.items) ? response.data.items : [];
 };

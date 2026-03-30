@@ -162,6 +162,48 @@ function buildAlbumTitleWithEdition(album, includeEdition = false) {
   return '';
 }
 
+function normalizeAlbumCovers(album) {
+  const raw = Array.isArray(album?.covers) ? album.covers : [];
+  const normalized = raw
+    .map((cover, index) => ({
+      key: String(cover?.id ?? cover?.file_name ?? `cover-${index}`),
+      id: cover?.id ?? null,
+      title: copyValue(cover?.title),
+      url: String(cover?.url ?? '').trim(),
+      sort_order: Number(cover?.sort_order ?? index + 1) || index + 1,
+      is_primary: Boolean(cover?.is_primary),
+      meta: cover?.meta ?? null,
+    }))
+    .filter((cover) => cover.url !== '')
+    .sort((a, b) => {
+      if (a.is_primary !== b.is_primary) return a.is_primary ? -1 : 1;
+      if (a.sort_order !== b.sort_order) return a.sort_order - b.sort_order;
+      return String(a.key).localeCompare(String(b.key), 'ja');
+    });
+
+  if (normalized.length > 0) return normalized;
+
+  const legacyUrl = String(album?.cover_image_url ?? '').trim();
+  if (legacyUrl === '') return [];
+
+  return [
+    {
+      key: 'legacy-primary',
+      id: null,
+      title: '',
+      url: legacyUrl,
+      sort_order: 1,
+      is_primary: true,
+      meta: album?.cover_image_meta ?? null,
+    },
+  ];
+}
+
+function coverOptionLabel(cover, index) {
+  const title = copyValue(cover?.title);
+  if (title !== '') return title;
+  return index === 0 ? '\u30b8\u30e3\u30b1\u30c3\u30c8' : `\u30b8\u30e3\u30b1\u30c3\u30c8 ${index + 1}`;
+}
 function buildTagPayload(album, track, releaseYear, trackTotalByDisk, discTotal, albumTitle = '') {
   const credits = track?.credits ?? {};
   const trackNo = Number(track?.track_number ?? 0);
@@ -260,10 +302,9 @@ function buildRenameContext(album, track, releaseYear, albumTitle = '') {
     album_artist: album?.album_artist?.name ?? '',
     year: releaseYear ?? '',
     release_date: album?.release_date ?? '',
-    catalog_number: album?.catalog_number ?? '',
+    catalog_number: album?.catalog_number_display ?? album?.catalog_number_display ?? album?.catalog_number ?? '',
   };
 }
-
 function renderRenameTemplate(template, context) {
   let out = String(template ?? '');
 
@@ -327,6 +368,8 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
   const [embedCover, setEmbedCover] = useState(false);
   const [renameOnWrite, setRenameOnWrite] = useState(false);
   const [includeEditionInAlbumName, setIncludeEditionInAlbumName] = useState(false);
+  const [selectedCoverKey, setSelectedCoverKey] = useState('');
+  const [tagCoverKey, setTagCoverKey] = useState('');
   const [renamePattern, setRenamePattern] = useState('$num(%track%,2) %title%');
   const [isTagOptionExpanded, setIsTagOptionExpanded] = useState(false);
 
@@ -504,6 +547,7 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
         public_id: String(variant?.public_id ?? '').trim(),
         edition: variant?.edition ?? '',
         catalog_number: variant?.catalog_number ?? '',
+        catalog_number_display: variant?.catalog_number_display ?? '',
         release_date: variant?.release_date ?? '',
       }))
       .filter((variant) => Number.isFinite(variant.id) && variant.id > 0)
@@ -517,6 +561,31 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
       });
   }, [album?.edition_variants]);
 
+  const coverOptions = useMemo(() => normalizeAlbumCovers(album), [album]);
+  const primaryCoverKey = useMemo(() => {
+    const primary = coverOptions.find((cover) => cover.is_primary) ?? coverOptions[0];
+    return primary?.key ?? '';
+  }, [coverOptions]);
+  const currentCover = useMemo(
+    () => coverOptions.find((cover) => cover.key === selectedCoverKey) ?? coverOptions.find((cover) => cover.key === primaryCoverKey) ?? null,
+    [coverOptions, selectedCoverKey, primaryCoverKey]
+  );
+  const tagCover = useMemo(
+    () => coverOptions.find((cover) => cover.key === tagCoverKey) ?? currentCover,
+    [coverOptions, tagCoverKey, currentCover]
+  );
+  const hasMultipleCovers = coverOptions.length > 1;
+
+  useEffect(() => {
+    if (coverOptions.length === 0) {
+      setSelectedCoverKey('');
+      setTagCoverKey('');
+      return;
+    }
+
+    setSelectedCoverKey((prev) => (coverOptions.some((cover) => cover.key === prev) ? prev : primaryCoverKey));
+    setTagCoverKey((prev) => (coverOptions.some((cover) => cover.key === prev) ? prev : primaryCoverKey));
+  }, [coverOptions, primaryCoverKey]);
   const selectedEditionAlbumId = useMemo(() => {
     const hasCurrent = editionVariants.some((variant) => getAlbumRouteId(variant) === canonicalAlbumId);
     if (hasCurrent) return canonicalAlbumId;
@@ -634,11 +703,11 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
 
   const editionText = useMemo(() => copyValue(album?.edition), [album?.edition]);
   const hasEdition = editionText !== '' && editionText !== '-';
-  const hasCoverImage = Boolean(album?.cover_image_url);
+  const hasCoverImage = Boolean(currentCover?.url);
   const coverMetaText = useMemo(() => {
-    const width = Number(album?.cover_image_meta?.width ?? 0);
-    const height = Number(album?.cover_image_meta?.height ?? 0);
-    const bytes = Number(album?.cover_image_meta?.bytes ?? 0);
+    const width = Number(currentCover?.meta?.width ?? 0);
+    const height = Number(currentCover?.meta?.height ?? 0);
+    const bytes = Number(currentCover?.meta?.bytes ?? 0);
     const parts = [];
     if (Number.isFinite(width) && width > 0 && Number.isFinite(height) && height > 0) {
       parts.push(`${width}x${height}px`);
@@ -647,7 +716,7 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
       parts.push(formatFileSize(bytes));
     }
     return parts.join(' / ');
-  }, [album?.cover_image_meta?.bytes, album?.cover_image_meta?.height, album?.cover_image_meta?.width]);
+  }, [currentCover?.meta?.bytes, currentCover?.meta?.height, currentCover?.meta?.width]);
   const coverCopyrightText = useMemo(() => {
     const label = copyValue(album?.label);
     return hasCoverImage && label !== '' ? '(C) ' + label : '';
@@ -673,6 +742,10 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
   const albumTitleText = useMemo(() => copyValue(album?.title), [album?.title]);
   const titleContextText = useMemo(() => copyValue(album?.title_context), [album?.title_context]);
   const albumCommentText = useMemo(() => copyValue(album?.comment), [album?.comment]);
+  const catalogNumberText = useMemo(
+    () => copyValue(album?.catalog_number_display) || copyValue(album?.catalog_number),
+    [album?.catalog_number, album?.catalog_number_display]
+  );
 
   const albumTitleEditionText = useMemo(() => {
     const title = copyValue(album?.title);
@@ -823,17 +896,18 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
   };
 
   const loadCoverArtwork = async () => {
-    if (!embedCover || !album?.cover_image_url) return null;
+    const coverUrl = String(tagCover?.url ?? '').trim();
+    if (!embedCover || coverUrl === '') return null;
 
     const candidates = [];
     try {
-      const parsed = new URL(album.cover_image_url, window.location.origin);
+      const parsed = new URL(coverUrl, window.location.origin);
       if (/^\/(images|storage)\//.test(parsed.pathname)) {
         candidates.push(new URL(`${parsed.pathname}${parsed.search}`, window.location.origin).toString());
       }
       candidates.push(parsed.toString());
     } catch {
-      candidates.push(String(album.cover_image_url));
+      candidates.push(coverUrl);
     }
 
     const uniqueUrls = [...new Set(candidates)];
@@ -849,7 +923,7 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
 
         const blob = await res.blob();
         if (blob.size > MAX_ARTWORK_BYTES) {
-          throw new Error('ジャケット画像が大きすぎます。2MB以下にしてください。');
+          throw new Error('\u30b8\u30e3\u30b1\u30c3\u30c8\u753b\u50cf\u304c\u5927\u304d\u3059\u304e\u307e\u3059\u3002MB\u4ee5\u4e0b\u306b\u3057\u3066\u304f\u3060\u3055\u3044\u3002');
         }
 
         return { mimeType: blob.type || 'image/jpeg', bytes: new Uint8Array(await blob.arrayBuffer()) };
@@ -859,10 +933,9 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
     }
 
     throw new Error(
-      `ジャケット画像の取得に失敗しました。CORSまたは画像URLを確認してください。(${lastError?.message || 'Failed to fetch'})`
+      `\u30b8\u30e3\u30b1\u30c3\u30c8\u753b\u50cf\u306e\u53d6\u5f97\u306b\u5931\u6557\u3057\u307e\u3057\u305f\u3002CORS\u307e\u305f\u306f\u753b\u50cfURL\u3092\u78ba\u8a8d\u3057\u3066\u304f\u3060\u3055\u3044\u3002 (${lastError?.message || 'Failed to fetch'})`
     );
   };
-
   const handleWriteTags = async () => {
     if (isWriting) return;
     if (!workerReady) return setTagError('タグ書き込みエンジンを準備中です。しばらく待って再実行してください。');
@@ -1161,9 +1234,9 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
         <div className="grid grid-cols-1 lg:grid-cols-[256px_1fr] gap-5 mb-6 items-start">
           <div className="w-40 sm:w-56 lg:w-64">
             <div className="w-40 h-40 sm:w-56 sm:h-56 lg:w-64 lg:h-64 rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-              {album?.cover_image_url ? (
+              {currentCover?.url ? (
                 <img
-                  src={album.cover_image_url}
+                  src={currentCover.url}
                   alt={album.title ?? 'album cover'}
                   className="w-full h-full object-cover"
                 />
@@ -1177,8 +1250,36 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
                 <div className="shrink-0 text-right">{coverCopyrightText && <p>{coverCopyrightText}</p>}</div>
               </div>
             )}
+            {hasMultipleCovers && (
+              <div className="mt-3 grid grid-cols-4 gap-2">
+                {coverOptions.map((cover, index) => {
+                  const selected = currentCover?.key === cover.key;
+                  const label = coverOptionLabel(cover, index);
+                  return (
+                    <button
+                      key={cover.key}
+                      type="button"
+                      onClick={() => setSelectedCoverKey(cover.key)}
+                      className="text-left"
+                      title={label}
+                    >
+                      <div
+                        className={[
+                          'aspect-square overflow-hidden rounded-lg border bg-gray-100 dark:bg-gray-700',
+                          selected
+                            ? 'border-sky-500 ring-2 ring-sky-300/70 dark:border-sky-400 dark:ring-sky-500/40'
+                            : 'border-gray-200 hover:border-gray-300 dark:border-gray-600 dark:hover:border-gray-500',
+                        ].join(' ')}
+                      >
+                        <img src={cover.url} alt={label} className="h-full w-full object-cover" />
+                      </div>
+                      <span className="mt-1 block truncate text-[10px] text-gray-500 dark:text-gray-300">{label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
-
           <div className="space-y-2 text-sm text-gray-700 dark:text-gray-200">
             <div className="flex flex-wrap items-start gap-2 min-w-0 border-b border-gray-200/70 dark:border-gray-700/70 pb-2">
               <h1 className="text-xl sm:text-2xl font-bold break-words min-w-0">{album?.title ?? `アルバム ID: ${id}`}</h1>
@@ -1269,8 +1370,8 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
               <div className="grid grid-cols-1 sm:grid-cols-[160px_minmax(0,1fr)] gap-2 items-start border-b border-gray-200/70 dark:border-gray-700/70 py-1">
                 <span className="text-left text-gray-500 dark:text-gray-300">規格品番</span>
                 <div className="inline-flex max-w-full items-start gap-2">
-                  <span className="min-w-0 break-words text-left">{showValue(album?.catalog_number)}</span>
-                  {renderCopyIcon(copyValue(album?.catalog_number), 'album-catalog', '規格品番')}
+                  <span className="min-w-0 break-words text-left">{showValue(catalogNumberText)}</span>
+                  {renderCopyIcon(catalogNumberText, 'album-catalog', '規格品番')}
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-[160px_minmax(0,1fr)] gap-2 items-start border-b border-gray-200/70 dark:border-gray-700/70 py-1">
@@ -1408,6 +1509,26 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
                   />
                   ジャケット画像を埋め込む（2MBまで）
                 </label>
+
+                {embedCover && hasMultipleCovers && (
+                  <label className="flex w-full max-w-xs flex-col gap-1 text-sm">
+                    <span>{'\u30bf\u30b0\u66f8\u304d\u8fbc\u307f\u306b\u4f7f\u3046\u30b8\u30e3\u30b1\u30c3\u30c8'}</span>
+                    <select
+                      value={tagCover?.key ?? ''}
+                      onChange={(e) => setTagCoverKey(String(e.target.value ?? ''))}
+                      disabled={isWriting}
+                      className="w-full rounded border border-gray-300 bg-white px-3 py-2 text-sm dark:border-gray-600 dark:bg-gray-900"
+                    >
+                      {coverOptions.map((cover, index) => (
+                        <option key={cover.key} value={cover.key}>
+                          {coverOptionLabel(cover, index)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+
+
 
                 <label className="flex items-center gap-2 text-sm">
                   <input

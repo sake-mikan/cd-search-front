@@ -7,6 +7,14 @@ import { formatInfoTimestamp } from "../utils/formatDateTime";
 import { formatDateDisplay } from "../utils/formatDateDisplay";
 import { getAlbumRouteId, getAlbumRoutePath } from "../utils/albumPublicId";
 import { getArtistAlbumsRoutePath, getArtistTracksRoutePath } from "../utils/artistPublicId";
+import {
+  PageBackdrop,
+  floatingThemeButtonClass,
+  pageCardClass,
+  panelClass,
+  pageShellClass,
+  primaryButtonClass,
+} from '../utils/uiTheme';
 
 const MAX_ARTWORK_BYTES = 2 * 1024 * 1024;
 
@@ -1199,40 +1207,31 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
   );
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top,_#eff6ff_0%,_#f8fafc_45%,_#eef2ff_100%)] px-3 pb-6 pt-4 text-gray-900 dark:bg-[radial-gradient(circle_at_top,_#0f172a_0%,_#111827_45%,_#020617_100%)] dark:text-gray-100 sm:p-6">
+    <div className={pageShellClass}>
+      <PageBackdrop />
       <button
         type="button"
         onClick={onToggleTheme}
-        className="absolute right-3 top-4 z-10 hidden lg:inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-700 shadow hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700 sm:right-6 sm:top-6"
+        className={floatingThemeButtonClass}
         title={themeTitle}
         aria-label={themeTitle}
       >
         {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
         <span>{themeLabel}</span>
       </button>
-      <div className="max-w-7xl mx-auto mb-3 flex items-center justify-between gap-2 lg:justify-start">
+      <div className="mx-auto mb-3 flex max-w-7xl items-center justify-between gap-2 lg:justify-start">
         <button
           type="button"
           onClick={() => navigate('/')}
-          className="inline-flex items-center justify-center gap-2 rounded-full bg-sky-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-sky-700"
+          className={primaryButtonClass}
         >
           一覧へ戻る
         </button>
-        <button
-          type="button"
-          onClick={onToggleTheme}
-          className="inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-700 shadow hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700 lg:hidden"
-          title={themeTitle}
-          aria-label={themeTitle}
-        >
-          {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
-          <span>{themeLabel}</span>
-        </button>
       </div>
 
-      <div className="mx-auto max-w-7xl rounded-[28px] bg-white/95 p-4 shadow-xl ring-1 ring-black/5 backdrop-blur dark:bg-gray-800/95 dark:ring-white/10 sm:p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-[256px_1fr] gap-5 mb-6 items-start">
-          <div className="w-40 sm:w-56 lg:w-64">
+      <div className={`${pageCardClass} max-w-7xl`}>
+        <div className="mb-6 grid grid-cols-1 gap-5 items-start lg:grid-cols-[320px_minmax(0,1fr)]">
+          <div className={`${panelClass} w-fit justify-self-start`}>
             <div className="w-40 h-40 sm:w-56 sm:h-56 lg:w-64 lg:h-64 rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
               {currentCover?.url ? (
                 <img
@@ -1280,7 +1279,7 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
               </div>
             )}
           </div>
-          <div className="space-y-2 text-sm text-gray-700 dark:text-gray-200">
+          <div className={`${panelClass} space-y-2 text-sm text-gray-700 dark:text-gray-200`}>
             <div className="flex flex-wrap items-start gap-2 min-w-0 border-b border-gray-200/70 dark:border-gray-700/70 pb-2">
               <h1 className="text-xl sm:text-2xl font-bold break-words min-w-0">{album?.title ?? `アルバム ID: ${id}`}</h1>
               <div className="inline-flex items-center gap-2 shrink-0 flex-wrap">

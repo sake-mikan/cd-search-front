@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Routes, Route, Link } from 'react-router-dom';
 import { ArrowDown, ArrowUp, ArrowUpDown, CalendarRange, Moon, RefreshCcw, Sparkles, Sun } from 'lucide-react';
-import { fetchAllAlbums, fetchAlbumSuggestions } from './api/albums';
+import { fetchAllAlbums, fetchAlbumSuggestions, fetchMusicBrainzFallbackAlbums } from './api/albums';
 import AlbumDetail from './pages/AlbumDetail';
 import AlbumCorrectionRequest from './pages/AlbumCorrectionRequest';
+import MusicBrainzAlbumDetail from './pages/MusicBrainzAlbumDetail';
 import ArtistTracks from './pages/ArtistTracks';
 import ArtistAlbums from './pages/ArtistAlbums';
 import SeriesAlbums from './pages/SeriesAlbums';
@@ -138,6 +139,26 @@ const shuffleAlbums = (items) => {
 };
 
 const pickFeaturedAlbums = (items) => shuffleAlbums(items).slice(0, FEATURED_TILE_LIMIT);
+const normalizeMusicBrainzMatchText = (value) =>
+  String(value ?? '')
+    .trim()
+    .toLocaleLowerCase('ja-JP')
+    .replace(/\s+/g, ' ');
+
+const createAlbumIdentityKey = (album) =>
+  [
+    normalizeMusicBrainzMatchText(album?.title),
+    normalizeMusicBrainzMatchText(album?.album_artist?.name ?? album?.album_artist),
+    normalizeCatalogNumber(album?.catalog_number_display ?? album?.catalog_number),
+    String(album?.release_date ?? '').trim(),
+  ].join('|');
+
+const filterNewMusicBrainzAlbums = (fallbackAlbums, existingAlbums) => {
+  const existingKeys = new Set((Array.isArray(existingAlbums) ? existingAlbums : []).map(createAlbumIdentityKey));
+  return (Array.isArray(fallbackAlbums) ? fallbackAlbums : []).filter(
+    (album) => !existingKeys.has(createAlbumIdentityKey(album))
+  );
+};
 
 function App() {
   const [albums, setAlbums] = useState([]);
@@ -164,6 +185,10 @@ function App() {
   const [titleSuggestions, setTitleSuggestions] = useState([]);
   const [artistSuggestions, setArtistSuggestions] = useState([]);
   const [catalogSuggestions, setCatalogSuggestions] = useState([]);
+  const [musicBrainzAlbums, setMusicBrainzAlbums] = useState([]);
+  const [musicBrainzLoading, setMusicBrainzLoading] = useState(false);
+  const [musicBrainzError, setMusicBrainzError] = useState('');
+  const [musicBrainzSearched, setMusicBrainzSearched] = useState(false);
 
   const [sort, setSort] = useState('release_date');
   const [order, setOrder] = useState('desc');
@@ -187,9 +212,21 @@ function App() {
       isBlankValue(nextReleaseDate)
     );
   };
+  const shouldSearchMusicBrainzFallback = (filters = {}) => {
+    const nextTitle = filters.title ?? title;
+    const nextArtist = filters.artist ?? artist;
+    const nextCatalog = filters.catalog_number ?? catalogNumber;
+
+    const filledCount = [nextTitle, nextArtist, nextCatalog].filter((value) => !isBlankValue(value)).length;
+    return !isBlankValue(nextCatalog) || filledCount >= 2;
+  };
   const loadAlbums = async (page = 1, override = {}) => {
     setLoading(true);
     setError('');
+    setMusicBrainzAlbums([]);
+    setMusicBrainzError('');
+    setMusicBrainzLoading(false);
+    setMusicBrainzSearched(false);
 
     try {
       const query = {
@@ -219,6 +256,24 @@ function App() {
       setResultLimited(Boolean(response.result_limited));
       const limitValue = Number(response.result_limit ?? 1000);
       setResultLimit(Number.isFinite(limitValue) && limitValue > 0 ? limitValue : 1000);
+
+      const shouldSearchFallback = shouldSearchMusicBrainzFallback(query);
+      if (shouldSearchFallback && totalValue <= 5) {
+        setMusicBrainzLoading(true);
+        setMusicBrainzSearched(true);
+        try {
+          const fallbackAlbums = await fetchMusicBrainzFallbackAlbums({
+            title: query.title,
+            artist: query.artist,
+            catalog_number: query.catalog_number,
+          });
+          setMusicBrainzAlbums(filterNewMusicBrainzAlbums(fallbackAlbums, nextAlbums));
+        } catch {
+          setMusicBrainzError('登録済みデータに対する補助候補の取得に失敗しました。');
+        } finally {
+          setMusicBrainzLoading(false);
+        }
+      }
     } catch {
       setError('データの取得に失敗しました。');
       setAlbums([]);
@@ -226,6 +281,10 @@ function App() {
       setLastPage(1);
       setResultCount(0);
       setResultLimited(false);
+      setMusicBrainzAlbums([]);
+      setMusicBrainzError('');
+      setMusicBrainzLoading(false);
+      setMusicBrainzSearched(false);
     } finally {
       setLoading(false);
     }
@@ -286,7 +345,7 @@ function App() {
         setFeaturedAlbums(pickFeaturedAlbums(upcomingAlbums));
       } catch {
         setFeaturedAlbums([]);
-        setFeaturedError('今週〜来週の発売予定の取得に失敗しました。');
+        setFeaturedError('新着CDの取得に失敗しました。');
       } finally {
         setFeaturedLoading(false);
       }
@@ -452,6 +511,10 @@ function App() {
     setTitleSuggestions([]);
     setArtistSuggestions([]);
     setCatalogSuggestions([]);
+    setMusicBrainzAlbums([]);
+    setMusicBrainzError('');
+    setMusicBrainzLoading(false);
+    setMusicBrainzSearched(false);
     setHasSearched(false);
     setAlbums([]);
     setCurrentPage(1);
@@ -468,6 +531,8 @@ function App() {
   const themeLabel = isDarkMode ? '\u30e9\u30a4\u30c8' : '\u30c0\u30fc\u30af';
   const themeTitle = isDarkMode ? '\u30e9\u30a4\u30c8\u30e2\u30fc\u30c9\u306b\u5207\u308a\u66ff\u3048' : '\u30c0\u30fc\u30af\u30e2\u30fc\u30c9\u306b\u5207\u308a\u66ff\u3048';
   const isInitialView = !hasSearched;
+  const showMusicBrainzSection =
+    !isInitialView && resultCount === 0 && (musicBrainzLoading || musicBrainzError !== '' || musicBrainzSearched);
   return (
     <>
       <Routes>
@@ -731,7 +796,7 @@ function App() {
                   </p>
                 )}
 
-                {!isInitialView && (
+                {!isInitialView && resultCount > 0 && (
                   <div className="overflow-hidden rounded-[24px] border border-slate-200/70 bg-white/90 shadow-sm dark:border-slate-700/70 dark:bg-slate-800/90">
                     <div className="overflow-x-auto">
                       <table className="w-full min-w-[760px] border-collapse text-sm">
@@ -833,7 +898,92 @@ function App() {
                   </div>
                 )}
 
-                {!isInitialView && (
+                {showMusicBrainzSection && (
+                  <section className="mt-6 rounded-[24px] border border-slate-200/70 bg-white/90 p-4 shadow-sm dark:border-slate-700/70 dark:bg-slate-800/90">
+                    <div className="mb-4 space-y-1">
+                      <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">MusicBrainz 候補</h2>
+                      <p className="text-sm text-slate-600 dark:text-slate-300">
+                        {resultCount === 0 ? '登録済みデータに見つからなかったため、MusicBrainz の検索結果を表示しています。' : '登録済みデータに加えて、未登録の MusicBrainz 候補も表示しています。'}
+                      </p>
+                    </div>
+
+                    {musicBrainzLoading && (
+                      <p className="text-sm text-slate-500 dark:text-slate-300">MusicBrainz を検索しています...</p>
+                    )}
+
+                    {!musicBrainzLoading && musicBrainzError && (
+                      <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
+                        {musicBrainzError}
+                      </p>
+                    )}
+
+                    {!musicBrainzLoading && !musicBrainzError && musicBrainzAlbums.length === 0 && resultCount === 0 && (
+                      <p className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-300">
+                        MusicBrainz にも候補は見つかりませんでした。
+                      </p>
+                    )}
+
+                    {!musicBrainzLoading && musicBrainzAlbums.length > 0 && (
+                      <div className="overflow-hidden rounded-[24px] border border-slate-200/70 bg-white/90 shadow-sm dark:border-slate-700/70 dark:bg-slate-800/90">
+                        <div className="overflow-x-auto">
+                          <table className="w-full min-w-[760px] border-collapse text-sm">
+                            <thead>
+                              <tr className="bg-slate-100 dark:bg-slate-700/80">
+                                <th className="border-b border-r border-slate-200 px-3 py-2 w-20 text-sm font-semibold whitespace-nowrap last:border-r-0 dark:border-slate-600">ジャケット</th>
+                                <th className="border-b border-r border-slate-200 px-3 py-2 text-sm font-semibold whitespace-nowrap last:border-r-0 dark:border-slate-600">タイトル</th>
+                                <th className="border-b border-r border-slate-200 px-3 py-2 text-sm font-semibold whitespace-nowrap last:border-r-0 dark:border-slate-600">アーティスト</th>
+                                <th className="border-b border-r border-slate-200 px-3 py-2 text-sm font-semibold whitespace-nowrap last:border-r-0 dark:border-slate-600">規格品番</th>
+                                <th className="border-b border-r border-slate-200 px-3 py-2 text-sm font-semibold whitespace-nowrap last:border-r-0 dark:border-slate-600">発売日</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {musicBrainzAlbums.map((album) => (
+                                <tr key={album.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/40">
+                                  <td className="border-b border-r border-slate-200 px-2 py-2 last:border-r-0 dark:border-slate-600">
+                                    <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded bg-gray-200 dark:bg-gray-700">
+                                      {album.cover_image_url ? (
+                                        <img
+                                          src={album.cover_image_url}
+                                          alt={album.title}
+                                          loading="lazy"
+                                          decoding="async"
+                                          className="h-full w-full object-cover"
+                                          onError={(e) => {
+                                            e.currentTarget.style.display = 'none';
+                                            e.currentTarget.nextSibling.style.display = 'block';
+                                          }}
+                                        />
+                                      ) : null}
+                                      <span
+                                        className="text-xs text-gray-500 dark:text-gray-300"
+                                        style={{ display: album.cover_image_url ? 'none' : 'block' }}
+                                      >
+                                        No Image
+                                      </span>
+                                    </div>
+                                  </td>
+                                  <td className="border-b border-r border-slate-200 px-4 py-2 last:border-r-0 dark:border-slate-600">
+                                    <Link
+                                      to={'/albums/musicbrainz/' + album.musicbrainz_id}
+                                      className="text-blue-600 hover:underline hover:text-blue-800 dark:text-sky-400 dark:hover:text-sky-300"
+                                    >
+                                      {album.title}
+                                    </Link>
+                                  </td>
+                                  <td className="border-b border-r border-slate-200 px-4 py-2 last:border-r-0 dark:border-slate-600">{album.album_artist || '-'}</td>
+                                  <td className="border-b border-r border-slate-200 px-4 py-2 whitespace-nowrap last:border-r-0 dark:border-slate-600">{album.catalog_number_display || album.catalog_number || '-'}</td>
+                                  <td className="border-b border-r border-slate-200 px-4 py-2 whitespace-nowrap last:border-r-0 dark:border-slate-600">{formatDateDisplay(album.release_date) || '-'}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+                  </section>
+                )}
+
+                {!isInitialView && resultCount > 0 && (
                   <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
                     <button
                       onClick={() => changePage(currentPage - 1)}
@@ -863,6 +1013,10 @@ function App() {
         <Route
           path="/albums/:id/correction-request"
           element={<AlbumCorrectionRequest isDarkMode={isDarkMode} onToggleTheme={toggleTheme} />}
+        />
+        <Route
+          path="/albums/musicbrainz/:id"
+          element={<MusicBrainzAlbumDetail isDarkMode={isDarkMode} onToggleTheme={toggleTheme} />}
         />
         <Route
           path="/albums/:id"

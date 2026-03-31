@@ -64,3 +64,26 @@ export const fetchContents = async () => {
   const response = await api.get('/contents');
   return Array.isArray(response.data?.items) ? response.data.items : [];
 };
+export const fetchMusicBrainzFallbackAlbums = async (params = {}) => {
+  const response = await api.get('/albums/musicbrainz-fallback', {
+    params,
+    timeout: 15000,
+  });
+
+  return Array.isArray(response.data?.items) ? response.data.items : [];
+};
+export const fetchMusicBrainzAlbumDetail = async (releaseId) => {
+  const response = await api.get(`/musicbrainz/releases/${encodeURIComponent(releaseId)}`, {
+    timeout: 15000,
+  });
+
+  return response.data ?? null;
+};
+
+export const registerMusicBrainzAlbum = async (releaseId) => {
+  const response = await api.post(`/musicbrainz/releases/${encodeURIComponent(releaseId)}/register`, {}, {
+    timeout: 30000,
+  });
+
+  return response.data ?? null;
+};

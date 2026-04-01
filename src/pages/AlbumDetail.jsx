@@ -11,6 +11,7 @@ import {
   PageBackdrop,
   floatingThemeButtonClass,
   pageCardClass,
+  heroPanelClass,
   panelClass,
   pageShellClass,
   primaryButtonClass,
@@ -50,9 +51,26 @@ function normalizeTracks(items) {
   });
 }
 
+function isNamedPersonObject(value) {
+  return Boolean(
+    value &&
+      typeof value === 'object' &&
+      !Array.isArray(value) &&
+      (Object.prototype.hasOwnProperty.call(value, 'name') ||
+        Object.prototype.hasOwnProperty.call(value, 'public_id') ||
+        Object.prototype.hasOwnProperty.call(value, 'artist_type'))
+  );
+}
+
 function toPeopleText(value) {
   if (value == null) return '';
-  const list = Array.isArray(value) ? value : typeof value === 'object' ? Object.values(value) : [value];
+  const list = Array.isArray(value)
+    ? value
+    : isNamedPersonObject(value)
+      ? [value]
+      : typeof value === 'object'
+        ? Object.values(value)
+        : [value];
   return list
     .map((x) => (typeof x === 'string' ? x : x?.name))
     .filter(Boolean)
@@ -61,7 +79,13 @@ function toPeopleText(value) {
 
 function toPeopleList(value) {
   if (value == null) return [];
-  const list = Array.isArray(value) ? value : typeof value === 'object' ? Object.values(value) : [value];
+  const list = Array.isArray(value)
+    ? value
+    : isNamedPersonObject(value)
+      ? [value]
+      : typeof value === 'object'
+        ? Object.values(value)
+        : [value];
   return list
     .map((x) => {
       if (typeof x === 'string') return { id: null, public_id: null, name: x };
@@ -818,6 +842,70 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
     );
   };
 
+  const detailLabelClass = "text-xs font-medium uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400";
+  const detailTextClass = "text-base font-semibold text-slate-900 dark:text-slate-100";
+  const detailValueWrapClass = "mt-1 flex min-w-0 items-start gap-2";
+
+  const renderDetailTextCard = (label, value, token, tooltip = `${label}をコピー`) => (
+    <div>
+      <p className={detailLabelClass}>{label}</p>
+      <div className={detailValueWrapClass}>
+        <p className={`min-w-0 break-words ${detailTextClass}`}>{showValue(value)}</p>
+        {renderCopyIcon(copyValue(value), token, label, tooltip)}
+      </div>
+    </div>
+  );
+
+  const renderDetailLinkedCard = (label, value, token, role, shouldLink = true) => {
+    const list = toPeopleList(value);
+    const text = list.map((x) => x.name).join(', ');
+
+    return (
+      <div>
+        <p className={detailLabelClass}>{label}</p>
+        <div className={detailValueWrapClass}>
+          <p className={`min-w-0 break-words ${detailTextClass}`}>
+            {list.length === 0 && '-'}
+            {list.map((person, idx) => (
+              <span key={`${token}-${person.id ?? 'text'}-${idx}`}>
+                {shouldLink && person.id ? (
+                  <Link
+                    to={getArtistTracksRoutePath(person, role)}
+                    className="text-blue-600 transition hover:underline dark:text-sky-400"
+                  >
+                    {person.name}
+                  </Link>
+                ) : (
+                  person.name
+                )}
+                {idx < list.length - 1 && ', '}
+              </span>
+            ))}
+          </p>
+          {renderCopyIcon(text, token, label)}
+        </div>
+      </div>
+    );
+  };
+
+  const renderAlbumArtistCard = () => (
+    <div className="md:col-span-2">
+      <p className={detailLabelClass}>アルバムアーティスト</p>
+      <div className={detailValueWrapClass}>
+        {shouldLinkAlbumArtist ? (
+          <Link
+            to={getArtistAlbumsRoutePath(album?.album_artist)}
+            className={`min-w-0 break-words text-blue-600 transition hover:underline dark:text-sky-400 ${detailTextClass}`}
+          >
+            {showValue(albumArtistName)}
+          </Link>
+        ) : (
+          <p className={`min-w-0 break-words ${detailTextClass}`}>{showValue(albumArtistName)}</p>
+        )}
+        {renderCopyIcon(copyValue(album?.album_artist?.name), 'album-artist', 'アルバムアーティスト')}
+      </div>
+    </div>
+  );
   const handleSelectFiles = async () => {
     if (!support.supported) return setTagError(support.reason);
     if (!workerReady) return setTagError('タグ書き込みエンジンを準備中です。しばらく待って再実行してください。');
@@ -1230,6 +1318,46 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
       </div>
 
       <div className={`${pageCardClass} max-w-7xl`}>
+        <section className={heroPanelClass}>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0 flex-1 space-y-3">
+              <h1 className="text-2xl font-bold tracking-tight sm:text-[2rem] break-words">{album?.title ?? `アルバム ID: ${id}`}</h1>
+              {(titleContextText !== '' || albumCommentText !== '') && (
+                <div className="grid gap-3 md:grid-cols-2">
+                  {titleContextText !== '' && (
+                    <p className={`break-words ${detailTextClass}`}>{titleContextText}</p>
+                  )}
+                  {albumCommentText !== '' && (
+                    <p className={`whitespace-pre-wrap break-words ${detailTextClass}`}>{albumCommentText}</p>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="inline-flex items-center gap-2 shrink-0 flex-wrap">
+              {hasEdition &&
+                (editionVariants.length > 1 ? (
+                  <label className="inline-flex items-center text-sm shrink-0">
+                    <select
+                      value={selectedEditionAlbumId}
+                      onChange={handleEditionChange}
+                      className="rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-2 py-1 text-sm"
+                    >
+                      {editionVariants.map((variant) => (
+                        <option key={variant.public_id || variant.id} value={getAlbumRouteId(variant)}>
+                          {albumEditionOptionLabel(variant)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ) : (
+                  <span className="text-sm shrink-0">{editionText}</span>
+                ))}
+              {renderCopyIcon(albumTitleText, 'album-title', 'アルバム名', 'アルバム名をコピー')}
+              {hasEdition && renderCopyIcon(albumTitleEditionText, 'album-title-edition', 'アルバム名+形態', 'アルバム名+形態をコピー')}
+            </div>
+          </div>
+        </section>
+
         <div className="mb-6 grid grid-cols-1 gap-5 items-start lg:grid-cols-[320px_minmax(0,1fr)]">
           <div className={`${panelClass} w-fit justify-self-start`}>
             <div className="w-40 h-40 sm:w-56 sm:h-56 lg:w-64 lg:h-64 rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
@@ -1280,130 +1408,47 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
             )}
           </div>
           <div className={`${panelClass} space-y-2 text-sm text-gray-700 dark:text-gray-200`}>
-            <div className="flex flex-wrap items-start gap-2 min-w-0 border-b border-gray-200/70 dark:border-gray-700/70 pb-2">
-              <h1 className="text-xl sm:text-2xl font-bold break-words min-w-0">{album?.title ?? `アルバム ID: ${id}`}</h1>
-              <div className="inline-flex items-center gap-2 shrink-0 flex-wrap">
-                {hasEdition &&
-                  (editionVariants.length > 1 ? (
-                    <label className="inline-flex items-center text-sm shrink-0">
-                      <select
-                        value={selectedEditionAlbumId}
-                        onChange={handleEditionChange}
-                        className="rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-2 py-1 text-sm"
-                      >
-                        {editionVariants.map((variant) => (
-                          <option key={variant.public_id || variant.id} value={getAlbumRouteId(variant)}>
-                            {albumEditionOptionLabel(variant)}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  ) : (
-                    <span className="text-sm shrink-0">{editionText}</span>
-                  ))}
-                {renderCopyIcon(albumTitleText, 'album-title', 'アルバム名', 'アルバム名をコピー')}
-                {hasEdition && renderCopyIcon(albumTitleEditionText, 'album-title-edition', 'アルバム名+形態', 'アルバム名+形態をコピー')}
-              </div>
-            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              {renderAlbumArtistCard()}
 
-            {(titleContextText !== '' || albumCommentText !== '') && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {titleContextText !== '' && (
-                  <div className="border-b border-gray-200/70 py-1 text-sm font-semibold leading-relaxed text-gray-700 dark:border-gray-700/70 dark:text-gray-100">
-                    {titleContextText}
-                  </div>
-                )}
-                {albumCommentText !== '' && (
-                  <div className="border-b border-gray-200/70 py-1 text-sm font-semibold leading-relaxed text-gray-700 dark:border-gray-700/70 dark:text-gray-100 whitespace-pre-wrap break-words">
-                    {albumCommentText}
-                  </div>
-                )}
-              </div>
-            )}
-            <div className="grid grid-cols-1 sm:grid-cols-[160px_minmax(0,1fr)] gap-2 items-start border-b border-gray-200/70 dark:border-gray-700/70 py-1">
-              <span className="text-left text-gray-500 dark:text-gray-300">アルバムアーティスト</span>
-              <div className="inline-flex max-w-full items-start gap-2">
-                {shouldLinkAlbumArtist ? (
-                  <Link
-                    to={getArtistAlbumsRoutePath(album.album_artist)}
-                    className="min-w-0 break-words text-left text-blue-600 dark:text-sky-400 hover:underline underline-offset-4"
-                  >
-                    {showValue(albumArtistName)}
-                  </Link>
-                ) : (
-                  <span className="min-w-0 break-words text-left">{showValue(albumArtistName)}</span>
-                )}
-                {renderCopyIcon(copyValue(album?.album_artist?.name), 'album-artist', 'アルバムアーティスト')}
-              </div>
-            </div>
-
-            {shouldShowUnitMembers && (
-              <div className="grid grid-cols-1 sm:grid-cols-[160px_minmax(0,1fr)] gap-2 items-start border-b border-gray-200/70 dark:border-gray-700/70 py-1">
-                <span className="text-left text-gray-500 dark:text-gray-300">ユニットメンバー</span>
-                {renderLinkedPeopleField(unitMembers, 'album-unit-members', 'ユニットメンバー', 'vocal')}
-              </div>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              <div className="grid grid-cols-1 sm:grid-cols-[160px_minmax(0,1fr)] gap-2 items-start border-b border-gray-200/70 dark:border-gray-700/70 py-1">
-                <span className="text-left text-gray-500 dark:text-gray-300">発売日</span>
-                <div className="inline-flex max-w-full items-start gap-2 flex-wrap">
-                  <span className="min-w-0 break-words text-left">{showValue(formatDateDisplay(album?.release_date))}</span>
+              <div>
+                <p className={detailLabelClass}>発売日</p>
+                <div className={`${detailValueWrapClass} flex-wrap`}>
+                  <p className={`min-w-0 break-words ${detailTextClass}`}>{showValue(formatDateDisplay(album?.release_date))}</p>
                   <div className="inline-flex items-center gap-2 flex-wrap">
                     {renderCopyIcon(copyValue(album?.release_date), 'album-release-date', '発売日', '発売日をコピー')}
                     {renderCopyIcon(copyValue(releaseYear), 'album-release-year', 'リリース年', 'リリース年のみコピー')}
                   </div>
                 </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-[160px_minmax(0,1fr)] gap-2 items-start border-b border-gray-200/70 dark:border-gray-700/70 py-1">
-                <span className="text-left text-gray-500 dark:text-gray-300">レーベル</span>
-                <div className="inline-flex max-w-full items-start gap-2">
-                  <span className="min-w-0 break-words text-left">{showValue(album?.label)}</span>
-                  {renderCopyIcon(copyValue(album?.label), 'album-label', 'レーベル')}
-                </div>
-              </div>
-            </div>
 
+              {renderDetailTextCard('レーベル', album?.label, 'album-label')}
+              {renderDetailTextCard('規格品番', catalogNumberText, 'album-catalog')}
+              {renderDetailTextCard('JAN', album?.jan, 'album-jan')}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-              <div className="grid grid-cols-1 sm:grid-cols-[160px_minmax(0,1fr)] gap-2 items-start border-b border-gray-200/70 dark:border-gray-700/70 py-1">
-                <span className="text-left text-gray-500 dark:text-gray-300">規格品番</span>
-                <div className="inline-flex max-w-full items-start gap-2">
-                  <span className="min-w-0 break-words text-left">{showValue(catalogNumberText)}</span>
-                  {renderCopyIcon(catalogNumberText, 'album-catalog', '規格品番')}
+              {shouldShowSeries && (
+                <div>
+                  <p className={detailLabelClass}>シリーズ</p>
+                  <div className={detailValueWrapClass}>
+                    <Link
+                      to={`/series/${album.series.public_id ?? album.series.id}/albums`}
+                      className={`min-w-0 break-words text-blue-600 transition hover:underline dark:text-sky-400 ${detailTextClass}`}
+                    >
+                      {showValue(seriesName)}
+                    </Link>
+                    {renderCopyIcon(copyValue(seriesName), 'album-series', 'シリーズ')}
+                  </div>
                 </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-[160px_minmax(0,1fr)] gap-2 items-start border-b border-gray-200/70 dark:border-gray-700/70 py-1">
-                <span className="text-left text-gray-500 dark:text-gray-300">JAN</span>
-                <div className="inline-flex max-w-full items-start gap-2">
-                  <span className="min-w-0 break-words text-left">{showValue(album?.jan)}</span>
-                  {renderCopyIcon(copyValue(album?.jan), 'album-jan', 'JAN')}
+              )}
+
+              {shouldShowContent && renderDetailTextCard('コンテンツ', contentName, 'album-content')}
+
+              {shouldShowUnitMembers && (
+                <div className="md:col-span-2">
+                  {renderDetailLinkedCard('ユニットメンバー', unitMembers, 'album-unit-members', 'vocal')}
                 </div>
-              </div>
+              )}
             </div>
-            {shouldShowSeries && (
-              <div className="grid grid-cols-1 sm:grid-cols-[160px_minmax(0,1fr)] gap-2 items-start border-b border-gray-200/70 dark:border-gray-700/70 py-1">
-                <span className="text-left text-gray-500 dark:text-gray-300">シリーズ</span>
-                <div className="inline-flex max-w-full items-start gap-2">
-                  <Link
-                    to={`/series/${album.series.public_id ?? album.series.id}/albums`}
-                    className="min-w-0 break-words text-left text-blue-600 dark:text-sky-400 hover:underline underline-offset-4"
-                  >
-                    {showValue(seriesName)}
-                  </Link>
-                  {renderCopyIcon(copyValue(seriesName), 'album-series', 'シリーズ')}
-                </div>
-              </div>
-            )}
-            {shouldShowContent && (
-              <div className="grid grid-cols-1 sm:grid-cols-[160px_minmax(0,1fr)] gap-2 items-start border-b border-gray-200/70 dark:border-gray-700/70 py-1">
-                <span className="text-left text-gray-500 dark:text-gray-300">コンテンツ</span>
-                <div className="inline-flex max-w-full items-start gap-2">
-                  <span className="min-w-0 break-words text-left">{showValue(contentName)}</span>
-                  {renderCopyIcon(copyValue(contentName), 'album-content', 'コンテンツ')}
-                </div>
-              </div>
-            )}
           </div>
         </div>
 

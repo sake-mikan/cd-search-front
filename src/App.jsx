@@ -836,6 +836,7 @@ function App() {
                               {sortIcon('catalog_number')}
                             </button>
                           </th>
+                          <th className={sortableHeaderClass}>{'\u7a2e\u5225'}</th>
                           <th className={sortableHeaderClass}>
                             <button
                               type="button"
@@ -888,7 +889,8 @@ function App() {
                             </td>
 
                             <td className="border-b border-r border-slate-200 px-4 py-2 last:border-r-0 dark:border-slate-600">{a.album_artist?.name ?? '-'}</td>
-                            <td className="border-b border-r border-slate-200 px-4 py-2 whitespace-nowrap w-[9.5rem] last:border-r-0 dark:border-slate-600">{a.catalog_number}</td>
+                            <td className="border-b border-r border-slate-200 px-4 py-2 whitespace-nowrap w-[9.5rem] last:border-r-0 dark:border-slate-600">{a.catalog_number_display || a.catalog_number || '-'}</td>
+                            <td className="border-b border-r border-slate-200 px-4 py-2 whitespace-nowrap w-[7rem] last:border-r-0 dark:border-slate-600">{a.release_type_label || a.release_type || '-'}</td>
                             <td className="border-b border-r border-slate-200 px-4 py-2 whitespace-nowrap w-[8.5rem] last:border-r-0 dark:border-slate-600">{formatDateDisplay(a.release_date) || '-'}</td>
                           </tr>
                         ))}

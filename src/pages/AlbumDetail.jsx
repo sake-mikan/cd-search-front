@@ -774,6 +774,7 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
   const albumTitleText = useMemo(() => copyValue(album?.title), [album?.title]);
   const titleContextText = useMemo(() => copyValue(album?.title_context), [album?.title_context]);
   const albumCommentText = useMemo(() => copyValue(album?.comment), [album?.comment]);
+  const releaseTypeText = useMemo(() => copyValue(album?.release_type_label) || copyValue(album?.release_type), [album?.release_type, album?.release_type_label]);
   const catalogNumberText = useMemo(
     () => copyValue(album?.catalog_number_display) || copyValue(album?.catalog_number),
     [album?.catalog_number, album?.catalog_number_display]
@@ -1321,6 +1322,11 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
         <section className={heroPanelClass}>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0 flex-1 space-y-3">
+              {releaseTypeText !== '' && (
+                <span className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-3 py-1 text-[11px] font-medium tracking-[0.18em] text-white dark:bg-white dark:text-slate-900">
+                  {releaseTypeText}
+                </span>
+              )}
               <h1 className="text-2xl font-bold tracking-tight sm:text-[2rem] break-words">{album?.title ?? `アルバム ID: ${id}`}</h1>
               {(titleContextText !== '' || albumCommentText !== '') && (
                 <div className="grid gap-3 md:grid-cols-2">

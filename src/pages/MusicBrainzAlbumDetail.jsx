@@ -233,6 +233,10 @@ export default function MusicBrainzAlbumDetail({ isDarkMode = false, onToggleThe
                     <p className="mt-1 text-base font-semibold text-slate-900 dark:text-slate-100">{formatDateDisplay(album.release_date) || '-'}</p>
                   </div>
                   <div>
+                    <p className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{'\u7a2e\u5225'}</p>
+                    <p className="mt-1 text-base font-semibold text-slate-900 dark:text-slate-100">{showValue(album.release_type_label || album.release_type)}</p>
+                  </div>
+                  <div>
                     <p className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{'\u898f\u683c\u54c1\u756a'}</p>
                     <p className="mt-1 text-base font-semibold text-slate-900 dark:text-slate-100">{showValue(album.catalog_number_display || album.catalog_number)}</p>
                   </div>

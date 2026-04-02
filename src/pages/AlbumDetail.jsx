@@ -7,6 +7,7 @@ import { formatInfoTimestamp } from "../utils/formatDateTime";
 import { formatDateDisplay } from "../utils/formatDateDisplay";
 import { getAlbumRouteId, getAlbumRoutePath } from "../utils/albumPublicId";
 import { getArtistAlbumsRoutePath, getArtistTracksRoutePath } from "../utils/artistPublicId";
+import { formatReleaseTypeLabel } from '../utils/releaseTypeLabel';
 import {
   PageBackdrop,
   floatingThemeButtonClass,
@@ -774,7 +775,7 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
   const albumTitleText = useMemo(() => copyValue(album?.title), [album?.title]);
   const titleContextText = useMemo(() => copyValue(album?.title_context), [album?.title_context]);
   const albumCommentText = useMemo(() => copyValue(album?.comment), [album?.comment]);
-  const releaseTypeText = useMemo(() => copyValue(album?.release_type_label) || copyValue(album?.release_type), [album?.release_type, album?.release_type_label]);
+  const releaseTypeText = useMemo(() => copyValue(formatReleaseTypeLabel(album?.release_type, album?.release_type_label)), [album?.release_type, album?.release_type_label]);
   const catalogNumberText = useMemo(
     () => copyValue(album?.catalog_number_display) || copyValue(album?.catalog_number),
     [album?.catalog_number, album?.catalog_number_display]
@@ -1322,21 +1323,21 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
         <section className={heroPanelClass}>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0 flex-1 space-y-3">
-              {releaseTypeText !== '' && (
-                <span className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-3 py-1 text-[11px] font-medium tracking-[0.18em] text-white dark:bg-white dark:text-slate-900">
-                  {releaseTypeText}
-                </span>
-              )}
-              <h1 className="text-2xl font-bold tracking-tight sm:text-[2rem] break-words">{album?.title ?? `アルバム ID: ${id}`}</h1>
-              {(titleContextText !== '' || albumCommentText !== '') && (
-                <div className="grid gap-3 md:grid-cols-2">
-                  {titleContextText !== '' && (
-                    <p className={`break-words ${detailTextClass}`}>{titleContextText}</p>
+              {(releaseTypeText !== '' || titleContextText !== '') && (
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                  {releaseTypeText !== '' && (
+                    <span className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-3 py-1 text-[11px] font-medium tracking-[0.18em] text-white dark:bg-white dark:text-slate-900">
+                      {releaseTypeText}
+                    </span>
                   )}
-                  {albumCommentText !== '' && (
-                    <p className={`whitespace-pre-wrap break-words ${detailTextClass}`}>{albumCommentText}</p>
+                  {titleContextText !== '' && (
+                    <p className="min-w-0 break-words text-sm font-semibold text-slate-600 dark:text-slate-300">{titleContextText}</p>
                   )}
                 </div>
+              )}
+              <h1 className="text-2xl font-bold tracking-tight sm:text-[2rem] break-words">{album?.title ?? `Album ID: ${id}`}</h1>
+              {albumCommentText !== '' && (
+                <p className={`whitespace-pre-wrap break-words ${detailTextClass}`}>{albumCommentText}</p>
               )}
             </div>
             <div className="inline-flex items-center gap-2 shrink-0 flex-wrap">
@@ -1366,13 +1367,22 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
 
         <div className="mb-6 grid grid-cols-1 gap-5 items-start lg:grid-cols-[320px_minmax(0,1fr)]">
           <div className={`${panelClass} w-fit justify-self-start`}>
-            <div className="w-40 h-40 sm:w-56 sm:h-56 lg:w-64 lg:h-64 rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+            <div className="group relative w-40 h-40 sm:w-56 sm:h-56 lg:w-64 lg:h-64 rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
               {currentCover?.url ? (
-                <img
-                  src={currentCover.url}
-                  alt={album.title ?? 'album cover'}
-                  className="w-full h-full object-cover"
-                />
+                <>
+                  <img
+                    src={currentCover.url}
+                    alt={album.title ?? 'album cover'}
+                    className="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:opacity-0"
+                  />
+                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-slate-950/85 p-2 opacity-0 transition duration-300 group-hover:opacity-100">
+                    <img
+                      src={currentCover.url}
+                      alt={album.title ?? 'album cover full view'}
+                      className="max-h-full max-w-full object-contain"
+                    />
+                  </div>
+                </>
               ) : (
                 <span className="text-xs text-gray-500 dark:text-gray-300">No Image</span>
               )}
@@ -1417,6 +1427,12 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
             <div className="grid gap-4 md:grid-cols-2">
               {renderAlbumArtistCard()}
 
+              {shouldShowUnitMembers && (
+                <div className="md:col-span-2">
+                  {renderDetailLinkedCard('ユニットメンバー', unitMembers, 'album-unit-members', 'vocal')}
+                </div>
+              )}
+
               <div>
                 <p className={detailLabelClass}>発売日</p>
                 <div className={`${detailValueWrapClass} flex-wrap`}>
@@ -1448,12 +1464,6 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
               )}
 
               {shouldShowContent && renderDetailTextCard('コンテンツ', contentName, 'album-content')}
-
-              {shouldShowUnitMembers && (
-                <div className="md:col-span-2">
-                  {renderDetailLinkedCard('ユニットメンバー', unitMembers, 'album-unit-members', 'vocal')}
-                </div>
-              )}
             </div>
           </div>
         </div>

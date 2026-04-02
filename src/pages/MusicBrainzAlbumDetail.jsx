@@ -4,6 +4,7 @@ import { ExternalLink, Moon, Sun } from 'lucide-react';
 import SiteFooter from '../components/SiteFooter';
 import { fetchMusicBrainzAlbumDetail, registerMusicBrainzAlbum } from '../api/albums';
 import { formatDateDisplay } from '../utils/formatDateDisplay';
+import { formatReleaseTypeLabel } from '../utils/releaseTypeLabel';
 import {
   PageBackdrop,
   floatingThemeButtonClass,
@@ -234,7 +235,7 @@ export default function MusicBrainzAlbumDetail({ isDarkMode = false, onToggleThe
                   </div>
                   <div>
                     <p className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{'\u7a2e\u5225'}</p>
-                    <p className="mt-1 text-base font-semibold text-slate-900 dark:text-slate-100">{showValue(album.release_type_label || album.release_type)}</p>
+                    <p className="mt-1 text-base font-semibold text-slate-900 dark:text-slate-100">{showValue(formatReleaseTypeLabel(album.release_type, album.release_type_label))}</p>
                   </div>
                   <div>
                     <p className="text-xs font-medium uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">{'\u898f\u683c\u54c1\u756a'}</p>

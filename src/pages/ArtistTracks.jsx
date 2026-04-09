@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ArrowDown, ArrowUp, ArrowUpDown, ListMusic } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, ListMusic, Moon, Sun } from 'lucide-react';
 import { buildApiUrl } from '../api/baseUrl';
 import InfoCard from '../components/InfoCard';
 import PageHeaderCard from '../components/PageHeaderCard';
@@ -9,7 +9,7 @@ import SiteFooter from '../components/SiteFooter';
 import { getAlbumRoutePath } from '../utils/albumPublicId';
 import { getArtistRouteId } from '../utils/artistPublicId';
 import { formatDateDisplay } from '../utils/formatDateDisplay';
-import { PageBackdrop, pageCardClass, pageShellClass, secondaryButtonClass } from '../utils/uiTheme';
+import { PageBackdrop, pageCardClass, pageShellClass, secondaryButtonClass, floatingThemeButtonClass } from '../utils/uiTheme';
 
 function formatAlbumTitle(album) {
   const title = String(album?.title ?? '').trim();
@@ -175,14 +175,30 @@ export default function ArtistTracks({ isDarkMode = false, onToggleTheme = () =>
     (page) => Math.abs(page - currentPage) <= 2 || page === 1 || page === lastPage
   );
 
+  const themeLabel = isDarkMode ? '\u30e9\u30a4\u30c8' : '\u30c0\u30fc\u30af';
+  const themeTitle = isDarkMode ? '\u30e9\u30a4\u30c8\u30e2\u30fc\u30c9\u306b\u5207\u308a\u66ff\u3048' : '\u30c0\u30fc\u30af\u30e2\u30fc\u30c9\u306b\u5207\u308a\u66ff\u3048';
+
   return (
     <div className={pageShellClass}>
       <PageBackdrop />
+
+      <button
+        type="button"
+        onClick={onToggleTheme}
+        className={floatingThemeButtonClass}
+        title={themeTitle}
+        aria-label={themeTitle}
+      >
+        {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+        <span>{themeLabel}</span>
+      </button>
       <div className={`${pageCardClass} max-w-6xl space-y-6`}>
         <PageHeaderCard
           maxWidthClass="max-w-6xl"
           isDarkMode={isDarkMode}
           onToggleTheme={onToggleTheme}
+          showFloatingThemeButton={false}
+          showMobileThemeButton={true}
           backLabel="戻る"
           onBack={() => navigate(-1)}
           badge="TRACK RELATION"

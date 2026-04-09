@@ -12,6 +12,7 @@ import { formatReleaseTypeLabel } from '../utils/releaseTypeLabel';
 import {
   PageBackdrop,
   floatingThemeButtonClass,
+  mobileThemeButtonClass,
   pageCardClass,
   heroPanelClass,
   panelClass,
@@ -180,10 +181,21 @@ function albumLinkTitle(link) {
   return String(link?.url ?? '');
 }
 
-function albumEditionOptionLabel(variant) {
-  const edition = copyValue(variant?.edition);
+function formatEditionDisplay(editionValue, packageSpecValue) {
+  const edition = copyValue(editionValue);
+  const packageSpec = copyValue(packageSpecValue);
+
   if (edition !== '' && edition !== '-') {
-    return edition;
+    return packageSpec !== '' ? `${edition}（${packageSpec}）` : edition;
+  }
+
+  return packageSpec;
+}
+
+function albumEditionOptionLabel(variant) {
+  const label = formatEditionDisplay(variant?.edition, variant?.package_spec);
+  if (label !== '') {
+    return label;
   }
   return '\u5f62\u614b\u306a\u3057';
 }
@@ -408,6 +420,7 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
   const [selectedCoverKey, setSelectedCoverKey] = useState('');
   const [tagCoverKey, setTagCoverKey] = useState('');
   const [renamePattern, setRenamePattern] = useState('$num(%track%,2) %title%');
+  const [commentOpen, setCommentOpen] = useState(false);
   const [isTagOptionExpanded, setIsTagOptionExpanded] = useState(false);
 
   const [copiedToken, setCopiedToken] = useState('');
@@ -583,6 +596,7 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
         id: Number(variant?.id ?? 0),
         public_id: String(variant?.public_id ?? '').trim(),
         edition: variant?.edition ?? '',
+        package_spec: variant?.package_spec ?? '',
         catalog_number: variant?.catalog_number ?? '',
         catalog_number_display: variant?.catalog_number_display ?? '',
         release_date: variant?.release_date ?? '',
@@ -739,7 +753,10 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
   );
 
   const editionText = useMemo(() => copyValue(album?.edition), [album?.edition]);
+  const packageSpecText = useMemo(() => copyValue(album?.package_spec), [album?.package_spec]);
+  const editionDisplayText = useMemo(() => formatEditionDisplay(editionText, packageSpecText), [editionText, packageSpecText]);
   const hasEdition = editionText !== '' && editionText !== '-';
+  const hasEditionDisplay = editionDisplayText !== '' && editionDisplayText !== '-';
   const hasCoverImage = Boolean(currentCover?.url);
   const coverMetaText = useMemo(() => {
     const width = Number(currentCover?.meta?.width ?? 0);
@@ -759,6 +776,21 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
     return hasCoverImage && label !== '' ? '(C) ' + label : '';
   }, [album?.label, hasCoverImage]);
   const hasMultipleEditionVariants = editionVariants.length > 1;
+  const effectiveEditionVariants = useMemo(
+    () => editionVariants.map((variant) => {
+      const routeId = getAlbumRouteId(variant);
+      return {
+        ...variant,
+        package_spec: copyValue(variant?.package_spec) || (routeId === canonicalAlbumId ? packageSpecText : ''),
+      };
+    }),
+    [canonicalAlbumId, editionVariants, packageSpecText]
+  );
+  const currentEditionLabel = useMemo(() => {
+    if (!hasMultipleEditionVariants) return editionDisplayText;
+    const currentVariant = effectiveEditionVariants.find((variant) => getAlbumRouteId(variant) === selectedEditionAlbumId);
+    return currentVariant ? albumEditionOptionLabel(currentVariant) : editionDisplayText;
+  }, [editionDisplayText, effectiveEditionVariants, hasMultipleEditionVariants, selectedEditionAlbumId]);
   const seriesName = useMemo(() => String(album?.series?.name ?? '').trim(), [album?.series?.name]);
   const shouldShowSeries = Boolean(album?.series?.id) && seriesName !== '';
   const contentName = useMemo(() => String(album?.content?.name ?? '').trim(), [album?.content?.name]);
@@ -822,7 +854,7 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
     );
   };
 
-  const renderLinkedPeopleField = (value, token, label, role) => {
+  const renderLinkedPeopleField = (value, token, label, role, linkClass = linkedPeopleClass) => {
     const list = toPeopleList(value);
     const text = list.map((x) => x.name).join(', ');
     return (
@@ -834,7 +866,7 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
               {person.id ? (
                 <Link
                   to={getArtistTracksRoutePath(person, role)}
-                  className={linkedPeopleClass}
+                  className={linkClass}
                 >
                   {person.name}
                 </Link>
@@ -854,6 +886,7 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
   const detailTextClass = "text-base font-semibold text-slate-900 dark:text-slate-100";
   const detailValueWrapClass = "mt-1 flex min-w-0 items-start gap-2";
   const linkedPeopleClass = "text-sky-600 underline decoration-sky-400/60 underline-offset-4 transition hover:text-sky-700 dark:text-sky-300 dark:decoration-sky-400/60";
+  const trackLinkedPeopleClass = "text-sky-600 underline decoration-sky-400/60 underline-offset-4 transition hover:text-sky-700 md:no-underline md:hover:underline md:focus-visible:underline dark:text-sky-300 dark:decoration-sky-400/60";
 
   const renderDetailTextCard = (label, value, token, tooltip = `${label}をコピー`) => (
     <div>
@@ -1328,13 +1361,23 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
         {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
         <span>{themeLabel}</span>
       </button>
-      <div className="mx-auto mb-3 flex max-w-7xl items-center justify-between gap-2 lg:justify-start">
+      <div className="mx-auto mb-3 flex max-w-7xl items-center justify-between gap-2">
         <button
           type="button"
           onClick={() => navigate('/')}
           className={primaryButtonClass}
         >
           一覧へ戻る
+        </button>
+        <button
+          type="button"
+          onClick={onToggleTheme}
+          className={`${mobileThemeButtonClass} lg:hidden`}
+          title={themeTitle}
+          aria-label={themeTitle}
+        >
+          {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+          <span>{themeLabel}</span>
         </button>
       </div>
 
@@ -1355,20 +1398,17 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
                 </div>
               )}
               <h1 className="text-2xl font-bold tracking-tight sm:text-[2rem] break-words">{album?.title ?? `Album ID: ${id}`}</h1>
-              {albumCommentText !== '' && (
-                <p className={`whitespace-pre-wrap break-words ${detailTextClass}`}>{albumCommentText}</p>
-              )}
             </div>
             <div className="inline-flex items-center gap-2 shrink-0 flex-wrap">
-              {hasEdition &&
+              {(hasEditionDisplay || hasMultipleEditionVariants) &&
                 (editionVariants.length > 1 ? (
                   <label className="inline-flex items-center text-sm shrink-0">
                     <select
                       value={selectedEditionAlbumId}
                       onChange={handleEditionChange}
-                      className="rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-2 py-1 text-sm"
+                      className="min-w-[240px] rounded border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 px-2 py-1 text-sm" title={currentEditionLabel}
                     >
-                      {editionVariants.map((variant) => (
+                      {effectiveEditionVariants.map((variant) => (
                         <option key={variant.public_id || variant.id} value={getAlbumRouteId(variant)}>
                           {albumEditionOptionLabel(variant)}
                         </option>
@@ -1376,7 +1416,7 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
                     </select>
                   </label>
                 ) : (
-                  <span className="text-sm shrink-0">{editionText}</span>
+                  <span className="text-sm shrink-0">{editionDisplayText}</span>
                 ))}
               {renderCopyIcon(albumTitleText, 'album-title', 'アルバム名', 'アルバム名をコピー')}
               {hasEdition && renderCopyIcon(albumTitleEditionText, 'album-title-edition', 'アルバム名+形態', 'アルバム名+形態をコピー')}
@@ -1384,7 +1424,7 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
           </div>
         </section>
 
-        <div className="mb-6 grid grid-cols-1 gap-5 items-start lg:grid-cols-[320px_minmax(0,1fr)]">
+        <div className="mb-6 grid grid-cols-1 gap-4 items-start lg:grid-cols-[296px_minmax(0,1fr)]">
           <div className={`${panelClass} w-fit justify-self-start`}>
             <div className="group relative w-40 h-40 sm:w-56 sm:h-56 lg:w-64 lg:h-64 rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
               {currentCover?.url ? (
@@ -1490,6 +1530,20 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
                 </div>
               )}
             </div>
+
+            {albumCommentText !== '' && (
+              <div className="mt-4 border-t border-slate-200/70 pt-4 dark:border-slate-700/70">
+                <details className="group" open={commentOpen} onToggle={(event) => setCommentOpen(event.currentTarget.open)}>
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                    <span>{'\u5546\u54c1\u8aac\u660e\u30fb\u30b3\u30e1\u30f3\u30c8'}</span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400">{commentOpen ? '\u9589\u3058\u308b' : '\u8868\u793a\u3059\u308b'}</span>
+                  </summary>
+                  <div className="mt-3 rounded-2xl border border-slate-200/70 bg-slate-50/80 p-4 text-sm leading-7 text-slate-700 shadow-sm dark:border-slate-700/70 dark:bg-slate-900/40 dark:text-slate-200">
+                    <p className="whitespace-pre-wrap break-words">{albumCommentText}</p>
+                  </div>
+                </details>
+              </div>
+            )}
           </div>
         </div>
 
@@ -1509,7 +1563,7 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
                           href={link.url}
                           target="_blank"
                           rel="noreferrer"
-                          className="break-all text-sky-600 underline decoration-sky-400/60 underline-offset-4 transition hover:text-sky-700 dark:text-sky-300 dark:decoration-sky-400/60"
+                          className="break-all text-sky-600 no-underline transition hover:text-sky-700 hover:underline hover:decoration-sky-400/60 hover:underline-offset-4 focus-visible:underline focus-visible:decoration-sky-400/60 focus-visible:underline-offset-4 dark:text-sky-300"
                         >
                           {albumLinkTitle(link)}
                         </a>
@@ -1531,7 +1585,9 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div className="space-y-1">
               <h2 className="text-lg font-bold">{'\u3053\u306e\u30a2\u30eb\u30d0\u30e0\u60c5\u5831\u3067\u30bf\u30b0\u3092\u66f8\u304d\u8fbc\u307f'}</h2>
-              <p className="text-sm text-gray-600 dark:text-gray-300">{'\u3053\u306e\u30a2\u30eb\u30d0\u30e0\u60c5\u5831\u3092\u4f7f\u3063\u3066\u30ed\u30fc\u30ab\u30eb\u97f3\u697d\u30d5\u30a1\u30a4\u30eb\u3078\u30bf\u30b0\u3092\u66f8\u304d\u8fbc\u3081\u307e\u3059\u3002\u97f3\u697d\u30d5\u30a1\u30a4\u30eb\u306f\u30b5\u30fc\u30d0\u30fc\u3078\u30a2\u30c3\u30d7\u30ed\u30fc\u30c9\u3055\u308c\u307e\u305b\u3093\u3002'}</p>
+              {support.supported ? (
+                <p className="text-sm text-gray-600 dark:text-gray-300">{'\u3053\u306e\u30a2\u30eb\u30d0\u30e0\u60c5\u5831\u3092\u4f7f\u3063\u3066\u30ed\u30fc\u30ab\u30eb\u97f3\u697d\u30d5\u30a1\u30a4\u30eb\u3078\u30bf\u30b0\u3092\u66f8\u304d\u8fbc\u3081\u307e\u3059\u3002\u97f3\u697d\u30d5\u30a1\u30a4\u30eb\u306f\u30b5\u30fc\u30d0\u30fc\u3078\u30a2\u30c3\u30d7\u30ed\u30fc\u30c9\u3055\u308c\u307e\u305b\u3093\u3002'}</p>
+              ) : null}
             </div>
 
             {support.supported && (
@@ -1770,10 +1826,10 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
                 <tr key={track.__rowKey ?? track.id ?? index} className={rowClass}>
                   <td className="border-b border-r border-slate-200 px-3 py-3 align-top last:border-r-0 dark:border-slate-600">{showValue(track.track_number)}</td>
                   <td className="border-b border-r border-slate-200 px-3 py-3 align-top last:border-r-0 dark:border-slate-600">{renderTrackField(track.title, `t-${track.id}-title`, '\u66f2\u540d')}</td>
-                  <td className="border-b border-r border-slate-200 px-3 py-3 align-top last:border-r-0 dark:border-slate-600">{renderLinkedPeopleField(track?.credits?.vocal, `t-${track.id}-artist`, '\u30a2\u30fc\u30c6\u30a3\u30b9\u30c8', 'vocal')}</td>
-                  <td className="border-b border-r border-slate-200 px-3 py-3 align-top last:border-r-0 dark:border-slate-600">{renderLinkedPeopleField(track?.credits?.lyricist, `t-${track.id}-lyricist`, '\u4f5c\u8a5e', 'lyricist')}</td>
-                  <td className="border-b border-r border-slate-200 px-3 py-3 align-top last:border-r-0 dark:border-slate-600">{renderLinkedPeopleField(track?.credits?.composer, `t-${track.id}-composer`, '\u4f5c\u66f2', 'composer')}</td>
-                  <td className="border-b border-r border-slate-200 px-3 py-3 align-top last:border-r-0 dark:border-slate-600">{renderLinkedPeopleField(track?.credits?.arranger, `t-${track.id}-arranger`, '\u7de8\u66f2', 'arranger')}</td>
+                  <td className="border-b border-r border-slate-200 px-3 py-3 align-top last:border-r-0 dark:border-slate-600">{renderLinkedPeopleField(track?.credits?.vocal, `t-${track.id}-artist`, '\u30a2\u30fc\u30c6\u30a3\u30b9\u30c8', 'vocal', trackLinkedPeopleClass)}</td>
+                  <td className="border-b border-r border-slate-200 px-3 py-3 align-top last:border-r-0 dark:border-slate-600">{renderLinkedPeopleField(track?.credits?.lyricist, `t-${track.id}-lyricist`, '\u4f5c\u8a5e', 'lyricist', trackLinkedPeopleClass)}</td>
+                  <td className="border-b border-r border-slate-200 px-3 py-3 align-top last:border-r-0 dark:border-slate-600">{renderLinkedPeopleField(track?.credits?.composer, `t-${track.id}-composer`, '\u4f5c\u66f2', 'composer', trackLinkedPeopleClass)}</td>
+                  <td className="border-b border-r border-slate-200 px-3 py-3 align-top last:border-r-0 dark:border-slate-600">{renderLinkedPeopleField(track?.credits?.arranger, `t-${track.id}-arranger`, '\u7de8\u66f2', 'arranger', trackLinkedPeopleClass)}</td>
                   <td className="border-b border-r border-slate-200 px-3 py-3 align-top last:border-r-0 dark:border-slate-600">{renderTrackField(track.genre, `t-${track.id}-genre`, '\u30b8\u30e3\u30f3\u30eb')}</td>
                   <td className="border-b border-r border-slate-200 px-3 py-3 align-top last:border-r-0 dark:border-slate-600">{renderTrackField(track.duration, `t-${track.id}-duration`, '\u6642\u9593')}</td>
                   <td className="border-b border-r border-slate-200 px-3 py-3 align-top last:border-r-0 dark:border-slate-600">{renderTrackField(track.comment, `t-${track.id}-comment`, '\u30b3\u30e1\u30f3\u30c8')}</td>

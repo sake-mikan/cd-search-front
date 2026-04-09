@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowDown, ArrowUp, ArrowUpDown, CalendarDays, CalendarRange, ChevronLeft, ChevronRight, Search, Sparkles } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, CalendarDays, CalendarRange, ChevronLeft, ChevronRight, Moon, Search, Sparkles, Sun } from 'lucide-react';
 import {
   fetchAllAlbums,
   fetchAlbumSuggestions,
@@ -20,6 +20,7 @@ import {
   pageShellClass,
   secondaryButtonClass,
   PageBackdrop,
+  floatingThemeButtonClass,
 } from '../utils/uiTheme';
 
 const SEARCH_PAGE_SIZE = 20;
@@ -548,9 +549,23 @@ export default function HomePage({ isDarkMode = false, onToggleTheme = () => {} 
 
   const showMusicBrainzSection = !loading && hasSearched && resultCount <= 5 && (musicBrainzLoading || musicBrainzError !== '' || musicBrainzSearched);
 
+  const themeLabel = isDarkMode ? '\u30e9\u30a4\u30c8' : '\u30c0\u30fc\u30af';
+  const themeTitle = isDarkMode ? '\u30e9\u30a4\u30c8\u30e2\u30fc\u30c9\u306b\u5207\u308a\u66ff\u3048' : '\u30c0\u30fc\u30af\u30e2\u30fc\u30c9\u306b\u5207\u308a\u66ff\u3048';
+
   return (
     <div className={pageShellClass}>
       <PageBackdrop />
+
+      <button
+        type="button"
+        onClick={onToggleTheme}
+        className={floatingThemeButtonClass}
+        title={themeTitle}
+        aria-label={themeTitle}
+      >
+        {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+        <span>{themeLabel}</span>
+      </button>
       <div className={`${pageCardClass} max-w-7xl space-y-6`}>
         <PageHeaderCard
           maxWidthClass="max-w-7xl"
@@ -560,6 +575,8 @@ export default function HomePage({ isDarkMode = false, onToggleTheme = () => {} 
           title={'CD情報検索'}
           subtitle={'タイトル、アーティスト、規格品番、発売日から横断検索できます。'}
           onToggleTheme={onToggleTheme}
+          showFloatingThemeButton={false}
+          showMobileThemeButton={true}
         >
           <div className="space-y-4">
             <SearchModeTabs current="album" />
@@ -781,6 +798,9 @@ export default function HomePage({ isDarkMode = false, onToggleTheme = () => {} 
             ) : null}
           </InfoCard>
         ) : null}
+      </div>
+      <div className="mt-6 text-center">
+        <Link to="/site-policy" className="text-sm font-medium text-slate-600 underline decoration-slate-400/70 underline-offset-4 transition hover:text-sky-700 dark:text-slate-300 dark:decoration-slate-500/70 dark:hover:text-sky-300">{'サイトポリシー'}</Link>
       </div>
       <SiteFooter />
     </div>

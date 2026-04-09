@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import AlbumDetail from './pages/AlbumDetail';
 import AlbumCorrectionRequest from './pages/AlbumCorrectionRequest';
@@ -8,6 +8,7 @@ import ContentSearch from './pages/ContentSearch';
 import HomePage from './pages/HomePage';
 import MusicBrainzAlbumDetail from './pages/MusicBrainzAlbumDetail';
 import SeriesAlbums from './pages/SeriesAlbums';
+import SitePolicy from './pages/SitePolicy';
 import TrackSearch from './pages/TrackSearch';
 
 const THEME_STORAGE_KEY = 'theme-preference';
@@ -69,6 +70,7 @@ export default function App() {
       <Route path="/" element={<HomePage {...sharedProps} />} />
       <Route path="/tracks" element={<TrackSearch {...sharedProps} />} />
       <Route path="/contents" element={<ContentSearch {...sharedProps} />} />
+      <Route path="/site-policy" element={<SitePolicy {...sharedProps} />} />
       <Route path="/albums/:id" element={<AlbumDetail {...sharedProps} />} />
       <Route path="/albums/:id/correction-request" element={<AlbumCorrectionRequest {...sharedProps} />} />
       <Route path="/albums/musicbrainz/:id" element={<MusicBrainzAlbumDetail {...sharedProps} />} />

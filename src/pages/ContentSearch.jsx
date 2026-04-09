@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { ArrowDown, ArrowUp, ArrowUpDown, Grid2x2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, Grid2x2, Moon, Sun } from 'lucide-react';
 import { fetchAllAlbums, fetchContents } from '../api/albums';
 import InfoCard from '../components/InfoCard';
 import PageHeaderCard from '../components/PageHeaderCard';
@@ -9,7 +9,7 @@ import SearchModeTabs from '../components/SearchModeTabs';
 import SiteFooter from '../components/SiteFooter';
 import { getAlbumRoutePath } from '../utils/albumPublicId';
 import { formatDateDisplay } from '../utils/formatDateDisplay';
-import { PageBackdrop, pageCardClass, pageShellClass, panelClass, secondaryButtonClass } from '../utils/uiTheme';
+import { PageBackdrop, pageCardClass, pageShellClass, panelClass, secondaryButtonClass, floatingThemeButtonClass } from '../utils/uiTheme';
 
 const SEARCH_PAGE_SIZE = 20;
 const sortableHeaderButtonClass =
@@ -149,6 +149,14 @@ export default function ContentSearch({ isDarkMode = false, onToggleTheme = () =
     return map;
   }, [contentTree]);
 
+  const visibleContentTree = useMemo(() => {
+    if (selectedContentId === '') return contentTree;
+    return contentTree.filter((parent) =>
+      String(parent.id) === selectedContentId ||
+      (Array.isArray(parent.children) ? parent.children : []).some((child) => String(child.id) === selectedContentId)
+    );
+  }, [contentTree, selectedContentId]);
+
   useEffect(() => {
     const nextContentId = String(searchParams.get('content_id') ?? '').trim();
     setSelectedContentId(nextContentId);
@@ -261,14 +269,30 @@ export default function ContentSearch({ isDarkMode = false, onToggleTheme = () =
     },
   ];
 
+  const themeLabel = isDarkMode ? '\u30e9\u30a4\u30c8' : '\u30c0\u30fc\u30af';
+  const themeTitle = isDarkMode ? '\u30e9\u30a4\u30c8\u30e2\u30fc\u30c9\u306b\u5207\u308a\u66ff\u3048' : '\u30c0\u30fc\u30af\u30e2\u30fc\u30c9\u306b\u5207\u308a\u66ff\u3048';
+
   return (
     <div className={pageShellClass}>
       <PageBackdrop />
+
+      <button
+        type="button"
+        onClick={onToggleTheme}
+        className={floatingThemeButtonClass}
+        title={themeTitle}
+        aria-label={themeTitle}
+      >
+        {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+        <span>{themeLabel}</span>
+      </button>
       <div className={`${pageCardClass} max-w-7xl space-y-6`}>
         <PageHeaderCard
           maxWidthClass="max-w-7xl"
           isDarkMode={isDarkMode}
           onToggleTheme={onToggleTheme}
+          showFloatingThemeButton={false}
+          showMobileThemeButton={true}
           badge="CONTENT NAVI"
           badgeIcon={Grid2x2}
           title="作品から探す"
@@ -282,9 +306,9 @@ export default function ContentSearch({ isDarkMode = false, onToggleTheme = () =
         <InfoCard title="カテゴリ一覧" description="作品を選択すると一覧が更新されます。">
           {loadingContents ? <p className="text-sm text-slate-500 dark:text-slate-300">作品一覧を読み込み中です。</p> : null}
           {!loadingContents && contentTree.length === 0 ? <p className="text-sm text-red-600 dark:text-red-300">{error || '作品一覧の取得に失敗しました。'}</p> : null}
-          {!loadingContents && contentTree.length > 0 ? (
+          {!loadingContents && visibleContentTree.length > 0 ? (
             <div className="space-y-5">
-              {contentTree.map((parent) => (
+              {visibleContentTree.map((parent) => (
                 <section
                   key={parent.id}
                   className="rounded-[24px] border border-slate-200/70 bg-gradient-to-br from-slate-50/90 via-white to-white p-4 shadow-sm dark:border-slate-700/70 dark:from-slate-800/90 dark:via-slate-800 dark:to-slate-900"

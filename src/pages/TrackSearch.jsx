@@ -1,6 +1,6 @@
 ﻿import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowDown, ArrowUp, ArrowUpDown, Music4, Search } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, Music4, Search, Moon, Sun } from 'lucide-react';
 import { buildApiUrl } from '../api/baseUrl';
 import SiteFooter from '../components/SiteFooter';
 import InfoCard from '../components/InfoCard';
@@ -8,7 +8,7 @@ import PageHeaderCard from '../components/PageHeaderCard';
 import ResponsiveResultList from '../components/ResponsiveResultList';
 import SearchModeTabs from '../components/SearchModeTabs';
 import { getAlbumRoutePath } from '../utils/albumPublicId';
-import { inputClass, pageCardClass, pageShellClass, secondaryButtonClass, PageBackdrop } from '../utils/uiTheme';
+import { inputClass, pageCardClass, pageShellClass, secondaryButtonClass, PageBackdrop, floatingThemeButtonClass } from '../utils/uiTheme';
 
 function roleLabel(role) {
   if (role === 'vocal') return '歌唱';
@@ -241,9 +241,23 @@ export default function TrackSearch({ isDarkMode = false, onToggleTheme = () => 
     },
   ];
 
+  const themeLabel = isDarkMode ? '\u30e9\u30a4\u30c8' : '\u30c0\u30fc\u30af';
+  const themeTitle = isDarkMode ? '\u30e9\u30a4\u30c8\u30e2\u30fc\u30c9\u306b\u5207\u308a\u66ff\u3048' : '\u30c0\u30fc\u30af\u30e2\u30fc\u30c9\u306b\u5207\u308a\u66ff\u3048';
+
   return (
     <div className={pageShellClass}>
       <PageBackdrop />
+
+      <button
+        type="button"
+        onClick={onToggleTheme}
+        className={floatingThemeButtonClass}
+        title={themeTitle}
+        aria-label={themeTitle}
+      >
+        {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+        <span>{themeLabel}</span>
+      </button>
       <div className={`${pageCardClass} max-w-7xl space-y-6`}>
         <PageHeaderCard
           maxWidthClass="max-w-7xl"
@@ -253,6 +267,8 @@ export default function TrackSearch({ isDarkMode = false, onToggleTheme = () => 
           subtitle="曲名から収録アルバムやクレジットを横断して探せます。"
           isDarkMode={isDarkMode}
           onToggleTheme={onToggleTheme}
+          showFloatingThemeButton={false}
+          showMobileThemeButton={true}
         >
           <div className="space-y-4">
             <SearchModeTabs current="track" />

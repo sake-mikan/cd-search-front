@@ -1,8 +1,9 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { ExternalLink, Moon, Sun } from 'lucide-react';
 import SiteFooter from '../components/SiteFooter';
-import { fetchMusicBrainzAlbumDetail, registerMusicBrainzAlbum } from '../api/albums';
+import MusicBrainzTagWritePanel from '../components/MusicBrainzTagWritePanel';
+import { fetchMusicBrainzAlbumDetail, requestMusicBrainzAlbum } from '../api/albums';
 import { formatDateDisplay } from '../utils/formatDateDisplay';
 import { formatReleaseTypeLabel } from '../utils/releaseTypeLabel';
 import {
@@ -64,7 +65,7 @@ function groupTracksByDisc(tracks) {
     .map(([discNumber, discTracks]) => ({ discNumber, tracks: discTracks }));
 }
 
-const registerButtonClass =
+const registerRequestButtonClass =
   'inline-flex items-center justify-center gap-2 rounded-full border border-emerald-200 bg-emerald-100/90 px-4 py-2 text-sm font-medium text-emerald-900 shadow-sm transition hover:bg-emerald-200/90 disabled:cursor-not-allowed disabled:opacity-60 dark:border-emerald-400/25 dark:bg-emerald-500/15 dark:text-emerald-200 dark:hover:bg-emerald-500/22';
 
 export default function MusicBrainzAlbumDetail({ isDarkMode = false, onToggleTheme = () => {} }) {
@@ -73,8 +74,9 @@ export default function MusicBrainzAlbumDetail({ isDarkMode = false, onToggleThe
   const [album, setAlbum] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [registering, setRegistering] = useState(false);
-  const [registerError, setRegisterError] = useState('');
+  const [requesting, setRequesting] = useState(false);
+  const [requestError, setRequestError] = useState('');
+  const [requestMessage, setRequestMessage] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -82,7 +84,8 @@ export default function MusicBrainzAlbumDetail({ isDarkMode = false, onToggleThe
     const load = async () => {
       setLoading(true);
       setError('');
-      setRegisterError('');
+      setRequestError('');
+      setRequestMessage('');
       try {
         const data = await fetchMusicBrainzAlbumDetail(id);
         if (active) {
@@ -119,34 +122,23 @@ export default function MusicBrainzAlbumDetail({ isDarkMode = false, onToggleThe
     navigate('/');
   };
 
-  const handleRegister = async () => {
-    if (!id || registering) return;
+  const handleRequestRegister = async () => {
+    if (!id || requesting) return;
 
-    setRegistering(true);
-    setRegisterError('');
+    setRequesting(true);
+    setRequestError('');
+    setRequestMessage('');
     try {
-      const result = await registerMusicBrainzAlbum(id);
-      const path = String(result?.path ?? '').trim();
-      if (path !== '') {
-        navigate(path);
-        return;
-      }
-
-      const albumId = String(result?.album_public_id ?? '').trim() || String(result?.album_id ?? '').trim();
-      if (albumId !== '') {
-        navigate(`/albums/${albumId}`);
-        return;
-      }
-
-      throw new Error('Album path was not returned.');
-    } catch (error) {
-      if (error?.response?.status === 429) {
-        setRegisterError('短時間に操作が集中したため、少し待ってからもう一度お試しください。');
+      await requestMusicBrainzAlbum(id);
+      setRequestMessage('\u767b\u9332\u4f9d\u983c\u3092\u9001\u4fe1\u3057\u307e\u3057\u305f\u3002');
+    } catch (caughtError) {
+      if (caughtError?.response?.status === 429) {
+        setRequestError('\u77ed\u6642\u9593\u306b\u64cd\u4f5c\u304c\u96c6\u4e2d\u3057\u305f\u305f\u3081\u3001\u5c11\u3057\u5f85\u3063\u3066\u304b\u3089\u3082\u3046\u4e00\u5ea6\u304a\u8a66\u3057\u304f\u3060\u3055\u3044\u3002');
       } else {
-        setRegisterError('登録に失敗しました。時間をおいてもう一度お試しください。');
+        setRequestError('\u767b\u9332\u4f9d\u983c\u306b\u5931\u6557\u3057\u307e\u3057\u305f\u3002\u6642\u9593\u3092\u304a\u3044\u3066\u3082\u3046\u4e00\u5ea6\u304a\u8a66\u3057\u304f\u3060\u3055\u3044\u3002');
       }
     } finally {
-      setRegistering(false);
+      setRequesting(false);
     }
   };
 
@@ -175,9 +167,14 @@ export default function MusicBrainzAlbumDetail({ isDarkMode = false, onToggleThe
         <section className={heroPanelClass}>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="space-y-3">
-              <span className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-3 py-1 text-[11px] font-medium tracking-[0.18em] text-white dark:bg-white dark:text-slate-900">
-                MUSICBRAINZ PREVIEW
-              </span>
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-3 py-1 text-[11px] font-medium tracking-[0.18em] text-white dark:bg-white dark:text-slate-900">
+                  MUSICBRAINZ PREVIEW
+                </span>
+                <p className="text-sm text-slate-600 dark:text-slate-300">
+                  {'\u30b5\u30a4\u30c8\u5185\u30c7\u30fc\u30bf\u304c\u898b\u3064\u304b\u3089\u306a\u304b\u3063\u305f\u305f\u3081\u3001MusicBrainz \u306e\u60c5\u5831\u3092\u8868\u793a\u3057\u3066\u3044\u307e\u3059\u3002'}
+                </p>
+              </div>
               <div className="space-y-2">
                 <h1 className="text-2xl font-bold tracking-tight sm:text-[2rem]">
                   {loading ? '\u8aad\u307f\u8fbc\u307f\u4e2d...' : showValue(album?.title)}
@@ -254,20 +251,30 @@ export default function MusicBrainzAlbumDetail({ isDarkMode = false, onToggleThe
                 <div className="mt-5 border-t border-slate-200/70 pt-4 dark:border-slate-700/70">
                   <button
                     type="button"
-                    onClick={handleRegister}
-                    disabled={registering}
-                    className={registerButtonClass}
+                    onClick={handleRequestRegister}
+                    disabled={requesting}
+                    className={registerRequestButtonClass}
                   >
-                    {registering ? '\u767b\u9332\u4e2d...' : '\u30bf\u30b0\u66f8\u304d\u8fbc\u307f\u6a5f\u80fd\u3092\u6709\u52b9\u306b\u3059\u308b'}
+                    {requesting ? '\u767b\u9332\u4f9d\u983c\u4e2d...' : '\u3053\u306eCD\u60c5\u5831\u3092\u767b\u9332\u4f9d\u983c\u3059\u308b'}
                   </button>
-                  {registerError ? (
+                  <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
+                    {'\u73fe\u5728\u8868\u793a\u3057\u3066\u3044\u308bCD\u60c5\u5831\u3092\u30b5\u30a4\u30c8\u5185\u306b\u767b\u9332\u3059\u308b\u305f\u3081\u306e\u4f9d\u983c\u3092\u51fa\u3059\u3053\u3068\u304c\u3067\u304d\u307e\u3059\u3002'}
+                  </p>
+                  {requestMessage ? (
+                    <p className="mt-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
+                      {requestMessage}
+                    </p>
+                  ) : null}
+                  {requestError ? (
                     <p className="mt-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
-                      {registerError}
+                      {requestError}
                     </p>
                   ) : null}
                 </div>
               </div>
             </section>
+
+            <MusicBrainzTagWritePanel album={album} />
 
             <section className="mt-6 space-y-6">
               {discGroups.length > 0 ? (
@@ -344,4 +351,3 @@ export default function MusicBrainzAlbumDetail({ isDarkMode = false, onToggleThe
     </div>
   );
 }
-

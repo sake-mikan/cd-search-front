@@ -87,3 +87,11 @@ export const registerMusicBrainzAlbum = async (releaseId) => {
 
   return response.data ?? null;
 };
+
+export const requestMusicBrainzAlbum = async (releaseId) => {
+  const response = await api.post(`/musicbrainz/releases/${encodeURIComponent(releaseId)}/request-register`, {}, {
+    timeout: 30000,
+  });
+
+  return response.data ?? null;
+};

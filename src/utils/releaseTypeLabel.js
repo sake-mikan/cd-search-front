@@ -1,19 +1,36 @@
-const RELEASE_TYPE_LABELS = {
+﻿const RELEASE_TYPE_LABELS_EN = {
   single: 'Single',
   album: 'Album',
   mini_album: 'Mini Album',
   'mini album': 'Mini Album',
   ep: 'EP',
-  'シングル': 'Single',
-  'アルバム': 'Album',
-  'ミニアルバム': 'Mini Album',
+  シングル: 'Single',
+  アルバム: 'Album',
+  ミニアルバム: 'Mini Album',
+};
+
+const RELEASE_TYPE_LABELS_JA = {
+  single: 'シングル',
+  album: 'アルバム',
+  mini_album: 'ミニアルバム',
+  'mini album': 'ミニアルバム',
+  ep: 'EP',
+  シングル: 'シングル',
+  アルバム: 'アルバム',
+  ミニアルバム: 'ミニアルバム',
 };
 
 function normalizeReleaseType(value) {
   return String(value ?? '').trim().toLowerCase().replace(/-/g, '_');
 }
 
-export function formatReleaseTypeLabel(releaseType, releaseTypeLabel) {
+function startCase(value) {
+  return String(value)
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function formatWithMap(releaseType, releaseTypeLabel, labels) {
   const candidates = [releaseType, releaseTypeLabel];
 
   for (const candidate of candidates) {
@@ -21,18 +38,24 @@ export function formatReleaseTypeLabel(releaseType, releaseTypeLabel) {
     if (raw === '') continue;
 
     const normalized = normalizeReleaseType(raw);
-    if (RELEASE_TYPE_LABELS[normalized]) {
-      return RELEASE_TYPE_LABELS[normalized];
+    if (labels[normalized]) {
+      return labels[normalized];
     }
 
-    if (RELEASE_TYPE_LABELS[raw]) {
-      return RELEASE_TYPE_LABELS[raw];
+    if (labels[raw]) {
+      return labels[raw];
     }
 
-    return raw
-      .replace(/_/g, ' ')
-      .replace(/\b\w/g, (char) => char.toUpperCase());
+    return startCase(raw);
   }
 
   return '';
+}
+
+export function formatReleaseTypeLabel(releaseType, releaseTypeLabel) {
+  return formatWithMap(releaseType, releaseTypeLabel, RELEASE_TYPE_LABELS_EN);
+}
+
+export function formatReleaseTypeLabelJa(releaseType, releaseTypeLabel) {
+  return formatWithMap(releaseType, releaseTypeLabel, RELEASE_TYPE_LABELS_JA);
 }

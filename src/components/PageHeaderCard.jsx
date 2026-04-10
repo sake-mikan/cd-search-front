@@ -1,4 +1,4 @@
-﻿import { Moon, Sun } from 'lucide-react';
+import { Moon, Sun } from 'lucide-react';
 import {
   floatingThemeButtonClass,
   heroPanelClass,
@@ -23,6 +23,7 @@ export default function PageHeaderCard({
   titleClassName = 'text-2xl font-bold tracking-tight sm:text-[2rem]',
   showFloatingThemeButton = true,
   showMobileThemeButton = true,
+  sectionClassName = '',
 }) {
   const themeLabel = isDarkMode ? 'ライト' : 'ダーク';
   const themeTitle = isDarkMode ? 'ライトモードに切り替え' : 'ダークモードに切り替え';
@@ -65,7 +66,7 @@ export default function PageHeaderCard({
         ) : null}
       </div>
 
-      <section className={heroPanelClass}>
+      <section className={[heroPanelClass, sectionClassName].filter(Boolean).join(' ')}>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0 flex-1 space-y-3">
             {badge ? (
@@ -77,10 +78,12 @@ export default function PageHeaderCard({
                 {badgeAside ? <span className="text-xs leading-6 text-slate-600 dark:text-slate-300">{badgeAside}</span> : null}
               </div>
             ) : null}
-            <div className="space-y-2">
-              <h1 className={titleClassName}>{title}</h1>
-              {subtitle ? <p className="max-w-3xl text-sm leading-6 text-slate-600 dark:text-slate-300">{subtitle}</p> : null}
-            </div>
+            {title || subtitle ? (
+              <div className="space-y-2">
+                {title ? <h1 className={titleClassName}>{title}</h1> : null}
+                {subtitle ? <p className="max-w-3xl text-sm leading-6 text-slate-600 dark:text-slate-300">{subtitle}</p> : null}
+              </div>
+            ) : null}
             {children}
           </div>
 

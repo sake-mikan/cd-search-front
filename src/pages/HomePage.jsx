@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowDown, ArrowUp, ArrowUpDown, CalendarDays, CalendarRange, ChevronLeft, ChevronRight, FilePenLine, Moon, Search, ShieldCheck, Sun } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, CalendarDays, CalendarRange, ChevronLeft, ChevronRight, FilePenLine, Moon, Search, ShieldCheck, Sparkles, Sun } from 'lucide-react';
 import DiscMasterLogo from '../components/DiscMasterLogo';
 import {
   fetchAllAlbums,
@@ -567,7 +567,7 @@ export default function HomePage({ isDarkMode = false, onToggleTheme = () => {} 
         {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
         <span>{themeLabel}</span>
       </button>
-      <div className={`${pageCardClass} max-w-7xl space-y-3`}>
+      <div className={`${pageCardClass} max-w-7xl space-y-1`}>
         <div className="px-1 pt-1 sm:px-2">
           <DiscMasterLogo />
         </div>
@@ -601,16 +601,26 @@ export default function HomePage({ isDarkMode = false, onToggleTheme = () => {} 
         <PageHeaderCard
           maxWidthClass="max-w-7xl"
           isDarkMode={isDarkMode}
-          title={'\u0043\u0044\u60c5\u5831\u691c\u7d22'}
-          subtitle={'タイトル、アーティスト、規格品番、発売日から横断検索できます。'}
           onToggleTheme={onToggleTheme}
           showFloatingThemeButton={false}
           showMobileThemeButton={true}
+          sectionClassName="-mt-3 mb-0 overflow-visible rounded-none border-0 bg-none bg-transparent px-0 py-0 shadow-none"
         >
-          <div className="space-y-0">
+          <div className="-mx-4 space-y-0 sm:-mx-6">
             <SearchModeTabs current="album" />
-            <div className="-mt-px space-y-4 rounded-b-[24px] border border-slate-200/90 border-t-0 bg-slate-50/30 p-4 dark:border-slate-700/90 dark:bg-slate-900/20">
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,0.9fr)_minmax(0,0.8fr)_auto_auto] xl:items-end">
+            <div className="-mt-px space-y-3 rounded-b-[24px] border border-slate-200/90 border-t-0 bg-slate-50/30 px-4 py-3 dark:border-slate-700/90 dark:bg-slate-900/20 sm:px-5 sm:py-4">
+              <div className="space-y-3 pb-2 pt-1">
+                <span className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-3 py-1 text-[11px] font-medium tracking-[0.18em] text-white shadow-sm dark:bg-white dark:text-slate-900">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  <span>CD SEARCH</span>
+                </span>
+                <div className="space-y-1.5">
+                  <h1 className="text-[1.75rem] font-bold tracking-tight text-slate-900 sm:text-[1.9rem] dark:text-white">{'\u0043\u0044\u691c\u7d22'}</h1>
+                  <p className="max-w-3xl text-sm leading-6 text-slate-600 dark:text-slate-300">{'\u30bf\u30a4\u30c8\u30eb\u30fb\u30a2\u30fc\u30c6\u30a3\u30b9\u30c8\u30fb\u898f\u683c\u54c1\u756a\u30fb\u767a\u58f2\u65e5\u3067\u0043\u0044\u3092\u691c\u7d22\u3067\u304d\u307e\u3059\u3002'}</p>
+                </div>
+                <div className="h-px w-full bg-slate-200/90 dark:bg-slate-700/80" />
+              </div>
+              <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,0.9fr)_minmax(0,0.8fr)_auto_auto] xl:items-end">
               <label className="space-y-2 text-sm">
                 <span className="text-xs font-medium uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">{'タイトル'}</span>
                 <input type="text" value={title} onChange={(event) => setTitle(event.target.value)} list="album-title-suggestions" placeholder={'例: MILLION C@STING 03'} className={inputClass} />
@@ -644,7 +654,7 @@ export default function HomePage({ isDarkMode = false, onToggleTheme = () => {} 
           </div>
         </PageHeaderCard>
         {!hasSearched ? (
-          <InfoCard className="space-y-4">
+          <InfoCard className="-mt-3 space-y-4">
             <div className="space-y-4">
               <span className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-3 py-1 text-[11px] font-medium tracking-[0.18em] text-white dark:bg-white dark:text-slate-900">
                 <CalendarDays className="h-3.5 w-3.5" />
@@ -827,7 +837,7 @@ export default function HomePage({ isDarkMode = false, onToggleTheme = () => {} 
         ) : null}
       </div>
       <div className="mt-6 text-center">
-        <Link to="/site-policy" className="text-sm font-medium text-slate-600 underline decoration-slate-400/70 underline-offset-4 transition hover:text-sky-700 dark:text-slate-300 dark:decoration-slate-500/70 dark:hover:text-sky-300">{'サイトポリシー'}</Link>
+        <Link to="/site-policy" className="text-sm font-medium text-slate-600 underline decoration-slate-400/70 underline-offset-4 transition hover:text-sky-700 dark:text-slate-300 dark:decoration-slate-500/70 dark:hover:text-sky-300">{'Site Policy'}</Link>
       </div>
       <SiteFooter />
     </div>

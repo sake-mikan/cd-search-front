@@ -1,4 +1,4 @@
-const SITE_NAME = 'CD Info Master';
+const SITE_NAME = 'DISC MASTER';
 const SITE_DOMAIN = 'cdinfo-master.com';
 
 export default function SiteFooter() {

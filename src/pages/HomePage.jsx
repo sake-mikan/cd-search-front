@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowDown, ArrowUp, ArrowUpDown, CalendarDays, CalendarRange, ChevronLeft, ChevronRight, Moon, Search, Sparkles, Sun } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, CalendarDays, CalendarRange, ChevronLeft, ChevronRight, FilePenLine, Moon, Search, ShieldCheck, Sun } from 'lucide-react';
+import DiscMasterLogo from '../components/DiscMasterLogo';
 import {
   fetchAllAlbums,
   fetchAlbumSuggestions,
@@ -566,13 +567,41 @@ export default function HomePage({ isDarkMode = false, onToggleTheme = () => {} 
         {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
         <span>{themeLabel}</span>
       </button>
-      <div className={`${pageCardClass} max-w-7xl space-y-6`}>
+      <div className={`${pageCardClass} max-w-7xl space-y-3`}>
+        <div className="px-1 pt-1 sm:px-2">
+          <DiscMasterLogo />
+        </div>
+
+        <div className="grid gap-2.5 lg:grid-cols-2">
+          <div className="relative overflow-hidden rounded-[20px] border border-sky-300/35 bg-gradient-to-br from-sky-500/12 via-cyan-500/8 to-slate-900/5 p-3.5 shadow-[0_12px_32px_-22px_rgba(14,165,233,0.42)] ring-1 ring-sky-400/10 dark:border-sky-400/16 dark:from-sky-400/14 dark:via-cyan-400/10 dark:to-slate-950/24">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(56,189,248,0.22),transparent_45%)]" />
+            <div className="relative flex items-start gap-2.5">
+              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[16px] bg-sky-500 text-white shadow-md shadow-sky-500/20">
+                <FilePenLine className="h-[15px] w-[15px]" />
+              </span>
+              <div className="space-y-0.5">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-700 dark:text-sky-300">{'タグ書き込み機能'}</p>
+                <p className="text-[13px] font-semibold leading-5 text-slate-900 dark:text-slate-100">{'対応ブラウザではローカルファイルへ楽曲情報を直接書き込めます。'}</p>
+              </div>
+            </div>
+          </div>
+          <div className="relative overflow-hidden rounded-[20px] border border-emerald-300/35 bg-gradient-to-br from-emerald-500/12 via-teal-500/8 to-slate-900/5 p-3.5 shadow-[0_12px_32px_-22px_rgba(16,185,129,0.38)] ring-1 ring-emerald-400/10 dark:border-emerald-400/16 dark:from-emerald-400/14 dark:via-teal-400/10 dark:to-slate-950/24">
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(52,211,153,0.18),transparent_45%)]" />
+            <div className="relative flex items-start gap-2.5">
+              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[16px] bg-emerald-500 text-white shadow-md shadow-emerald-500/20">
+                <ShieldCheck className="h-[15px] w-[15px]" />
+              </span>
+              <div className="space-y-0.5">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300">{'アップロード不要'}</p>
+                <p className="text-[13px] font-semibold leading-5 text-slate-900 dark:text-slate-100">{'音楽ファイルはサーバーへアップロードされません。ローカル環境内で処理できます。'}</p>
+              </div>
+            </div>
+          </div>
+        </div>
         <PageHeaderCard
           maxWidthClass="max-w-7xl"
           isDarkMode={isDarkMode}
-          badge="CD ARCHIVE"
-          badgeIcon={Sparkles}
-          title={'CD情報検索'}
+          title={'\u0043\u0044\u60c5\u5831\u691c\u7d22'}
           subtitle={'タイトル、アーティスト、規格品番、発売日から横断検索できます。'}
           onToggleTheme={onToggleTheme}
           showFloatingThemeButton={false}
@@ -610,10 +639,6 @@ export default function HomePage({ isDarkMode = false, onToggleTheme = () => {} 
               <button type="submit" className={`${searchSubmitButtonClass} xl:self-end`}><Search className="h-4 w-4" />{'検索'}</button>
               <button type="button" onClick={handleClear} className={`${clearButtonClass} xl:self-end`}>{'クリア'}</button>
             </form>
-            <div className="space-y-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
-              <p>{'\u5bfe\u5fdc\u30d6\u30e9\u30a6\u30b6\u3067\u306f\u30ed\u30fc\u30ab\u30eb\u30d5\u30a1\u30a4\u30eb\u3078\u76f4\u63a5\u30bf\u30b0\u3092\u66f8\u304d\u8fbc\u3081\u307e\u3059\u3002'}</p>
-              <p>{'\u97f3\u697d\u30d5\u30a1\u30a4\u30eb\u306f\u30b5\u30fc\u30d0\u30fc\u3078\u30a2\u30c3\u30d7\u30ed\u30fc\u30c9\u3055\u308c\u307e\u305b\u3093\u3002'}</p>
-            </div>
             {!loading && error ? <p className="text-sm text-red-600 dark:text-red-300">{error}</p> : null}
             </div>
           </div>
@@ -627,7 +652,7 @@ export default function HomePage({ isDarkMode = false, onToggleTheme = () => {} 
               </span>
 
               <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="space-y-1">
+                <div className="space-y-0.5">
                   <h2 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100 sm:text-xl">New Release</h2>
                 </div>
                 <div className="flex items-center gap-2">

@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowDown, ArrowUp, ArrowUpDown, Music4, Search, Moon, Sun } from 'lucide-react';
 import { buildApiUrl } from '../api/baseUrl';
@@ -270,8 +270,9 @@ export default function TrackSearch({ isDarkMode = false, onToggleTheme = () => 
           showFloatingThemeButton={false}
           showMobileThemeButton={true}
         >
-          <div className="space-y-4">
+          <div className="space-y-0">
             <SearchModeTabs current="track" />
+            <div className="-mt-px space-y-4 rounded-b-[24px] border border-slate-200/90 border-t-0 bg-slate-50/30 p-4 dark:border-slate-700/90 dark:bg-slate-900/20">
             <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_auto_auto] md:items-end">
               <label className="space-y-2 text-sm">
                 <span className="text-xs font-medium uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">曲名</span>
@@ -287,6 +288,7 @@ export default function TrackSearch({ isDarkMode = false, onToggleTheme = () => 
               <button type="submit" className={`${searchSubmitButtonClass} md:self-end`}><Search className="h-4 w-4" />{'\u691c\u7d22'}</button>
               <button type="button" onClick={handleClear} className={`${clearButtonClass} md:self-end`}>{'\u30af\u30ea\u30a2'}</button>
             </form>
+            </div>
           </div>
         </PageHeaderCard>
 

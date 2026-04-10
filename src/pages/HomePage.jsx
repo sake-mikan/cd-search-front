@@ -578,26 +578,27 @@ export default function HomePage({ isDarkMode = false, onToggleTheme = () => {} 
           showFloatingThemeButton={false}
           showMobileThemeButton={true}
         >
-          <div className="space-y-4">
+          <div className="space-y-0">
             <SearchModeTabs current="album" />
+            <div className="-mt-px space-y-4 rounded-b-[24px] border border-slate-200/90 border-t-0 bg-slate-50/30 p-4 dark:border-slate-700/90 dark:bg-slate-900/20">
             <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,0.9fr)_minmax(0,0.8fr)_auto_auto] xl:items-end">
               <label className="space-y-2 text-sm">
                 <span className="text-xs font-medium uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">{'タイトル'}</span>
-                <input type="text" value={title} onChange={(event) => setTitle(event.target.value)} list="album-title-suggestions" placeholder={'例: Thank You!'} className={inputClass} />
+                <input type="text" value={title} onChange={(event) => setTitle(event.target.value)} list="album-title-suggestions" placeholder={'例: MILLION C@STING 03'} className={inputClass} />
                 <datalist id="album-title-suggestions">
                   {titleSuggestions.map((item) => <option key={item} value={item} />)}
                 </datalist>
               </label>
               <label className="space-y-2 text-sm">
                 <span className="text-xs font-medium uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">{'アーティスト'}</span>
-                <input type="text" value={artist} onChange={(event) => setArtist(event.target.value)} list="album-artist-suggestions" placeholder={'例: 765 MILLION ALLSTARS'} className={inputClass} />
+                <input type="text" value={artist} onChange={(event) => setArtist(event.target.value)} list="album-artist-suggestions" placeholder={'例: STAR ELEMENTS'} className={inputClass} />
                 <datalist id="album-artist-suggestions">
                   {artistSuggestions.map((item) => <option key={item} value={item} />)}
                 </datalist>
               </label>
               <label className="space-y-2 text-sm">
                 <span className="text-xs font-medium uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">{'規格品番'}</span>
-                <input type="text" value={catalogNumber} onChange={(event) => setCatalogNumber(event.target.value)} list="album-catalog-suggestions" placeholder={'例: LACA-15901'} className={inputClass} />
+                <input type="text" value={catalogNumber} onChange={(event) => setCatalogNumber(event.target.value)} list="album-catalog-suggestions" placeholder={'例: LACM-14080'} className={inputClass} />
                 <datalist id="album-catalog-suggestions">
                   {catalogSuggestions.map((item) => <option key={item} value={item} />)}
                 </datalist>
@@ -614,6 +615,7 @@ export default function HomePage({ isDarkMode = false, onToggleTheme = () => {} 
               <p>{'\u97f3\u697d\u30d5\u30a1\u30a4\u30eb\u306f\u30b5\u30fc\u30d0\u30fc\u3078\u30a2\u30c3\u30d7\u30ed\u30fc\u30c9\u3055\u308c\u307e\u305b\u3093\u3002'}</p>
             </div>
             {!loading && error ? <p className="text-sm text-red-600 dark:text-red-300">{error}</p> : null}
+            </div>
           </div>
         </PageHeaderCard>
         {!hasSearched ? (

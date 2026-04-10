@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowDown, ArrowUp, ArrowUpDown, Grid2x2, Moon, Sun } from 'lucide-react';
 import { fetchAllAlbums, fetchContents } from '../api/albums';
-import InfoCard from '../components/InfoCard';
 import PageHeaderCard from '../components/PageHeaderCard';
 import ResponsiveResultList from '../components/ResponsiveResultList';
 import SearchModeTabs from '../components/SearchModeTabs';
@@ -286,7 +285,7 @@ export default function ContentSearch({ isDarkMode = false, onToggleTheme = () =
         {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
         <span>{themeLabel}</span>
       </button>
-      <div className={`${pageCardClass} max-w-7xl space-y-6`}>
+      <div className={`${pageCardClass} max-w-7xl space-y-6`}>        <div className="space-y-0">
         <PageHeaderCard
           maxWidthClass="max-w-7xl"
           isDarkMode={isDarkMode}
@@ -298,13 +297,14 @@ export default function ContentSearch({ isDarkMode = false, onToggleTheme = () =
           title="作品から探す"
           subtitle="コンテンツごとに関連アルバムをまとめて確認できます。"
         >
-          <div className="space-y-4">
+          <div className="space-y-0">
             <SearchModeTabs current="content" />
-          </div>
-        </PageHeaderCard>
-
-        <InfoCard title="カテゴリ一覧" description="作品を選択すると一覧が更新されます。">
-          {loadingContents ? <p className="text-sm text-slate-500 dark:text-slate-300">作品一覧を読み込み中です。</p> : null}
+            <div className="-mt-px rounded-b-[24px] border border-slate-200/90 border-t-0 bg-slate-50/30 p-4 dark:border-slate-700/90 dark:bg-slate-900/20">
+              <div className="mb-4 space-y-1">
+                <h2 className="text-base font-semibold tracking-tight text-slate-900 dark:text-slate-100">{'\u30ab\u30c6\u30b4\u30ea\u4e00\u89a7'}</h2>
+                <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">{'\u4f5c\u54c1\u3092\u9078\u629e\u3059\u308b\u3068\u8a72\u5f53\u3059\u308b\u30a2\u30eb\u30d0\u30e0\u304c\u8868\u793a\u3055\u308c\u307e\u3059\u3002'}</p>
+              </div>
+{loadingContents ? <p className="text-sm text-slate-500 dark:text-slate-300">作品一覧を読み込み中です。</p> : null}
           {!loadingContents && contentTree.length === 0 ? <p className="text-sm text-red-600 dark:text-red-300">{error || '作品一覧の取得に失敗しました。'}</p> : null}
           {!loadingContents && visibleContentTree.length > 0 ? (
             <div className="space-y-5">
@@ -350,7 +350,10 @@ export default function ContentSearch({ isDarkMode = false, onToggleTheme = () =
               ))}
             </div>
           ) : null}
-        </InfoCard>
+            </div>
+          </div>
+        </PageHeaderCard>
+        </div>
 
         {selectedContentId !== '' ? (
           <section className={panelClass}>

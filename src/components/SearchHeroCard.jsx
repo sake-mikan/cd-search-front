@@ -11,7 +11,7 @@ export default function SearchHeroCard({
   return (
     <div className="-mx-4 space-y-0 sm:-mx-6">
       <SearchModeTabs current={current} tone="home" />
-      <div className="-mt-px space-y-3 rounded-b-[24px] border border-slate-200/90 border-t-0 bg-slate-50/30 px-4 py-3 dark:border-slate-700/90 dark:bg-slate-900/20 sm:px-5 sm:py-4">
+      <div className="-mt-px space-y-3 rounded-b-[24px] border border-slate-200/90 border-t-0 bg-white px-4 py-3 dark:border-slate-700/90 dark:bg-slate-900/95 sm:px-5 sm:py-4">
         <div className="space-y-3 pb-2 pt-1">
           {badge ? (
             <span className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-3 py-1 text-[11px] font-medium tracking-[0.18em] text-white shadow-sm dark:bg-white dark:text-slate-900">

@@ -5,13 +5,13 @@ export const pageCardClass =
   'relative mx-auto rounded-[28px] bg-white/95 p-4 shadow-xl ring-1 ring-black/5 backdrop-blur dark:bg-gray-800/95 dark:ring-white/10 sm:p-6';
 
 export const heroPanelClass =
-  'mb-6 overflow-hidden rounded-[24px] border border-slate-200/70 bg-gradient-to-br from-slate-50 via-white to-sky-50/80 px-4 py-5 shadow-sm dark:border-slate-700/70 dark:from-slate-800 dark:via-slate-800 dark:to-slate-900 sm:px-6 sm:py-6';
+  'mb-6 overflow-hidden rounded-[24px] border border-slate-200/70 bg-gradient-to-br from-slate-50 via-white to-sky-50/80 px-4 py-5 shadow-sm dark:border-slate-700/70 dark:bg-slate-800/95 dark:bg-none sm:px-6 sm:py-6';
 
 export const panelClass =
-  'rounded-[24px] border border-slate-200/70 bg-white/80 px-4 py-5 shadow-sm dark:border-slate-700/70 dark:bg-slate-800/70 sm:px-5';
+  'rounded-[24px] border border-slate-200/70 bg-white/80 px-4 py-5 shadow-sm dark:border-slate-700/70 dark:bg-slate-800/95 sm:px-5';
 
 export const panelMutedClass =
-  'rounded-[20px] border border-slate-200/70 bg-slate-50/80 px-4 py-4 shadow-sm dark:border-slate-700/70 dark:bg-slate-900/40';
+  'rounded-[20px] border border-slate-200/70 bg-slate-50/80 px-4 py-4 shadow-sm dark:border-slate-700/70 dark:bg-slate-900/65';
 
 export const floatingThemeButtonClass =
   'fixed right-3 top-3 z-50 inline-flex h-10 w-10 items-center justify-center gap-0 rounded-full border border-gray-300 bg-white/95 p-0 text-[0] text-gray-700 shadow-lg backdrop-blur transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800/95 dark:text-gray-100 dark:hover:bg-gray-700 sm:right-4 sm:top-4 lg:absolute lg:right-6 lg:top-6 lg:h-auto lg:w-auto lg:gap-2 lg:px-3 lg:py-1.5 lg:text-xs';
@@ -34,7 +34,7 @@ export const inputClass =
 export const textareaClass = `${inputClass} min-h-[140px]`;
 
 export const tableCardClass =
-  'overflow-hidden rounded-[24px] border border-slate-200/70 bg-white/90 shadow-sm dark:border-slate-700/70 dark:bg-slate-800/90';
+  'overflow-hidden rounded-[24px] border border-slate-200/70 bg-white/90 shadow-sm dark:border-slate-700/70 dark:bg-slate-800/95';
 
 export const tableClass = 'w-full border-collapse text-sm';
 export const tableHeadRowClass = 'bg-slate-100 dark:bg-slate-700/80';

@@ -9,8 +9,8 @@ export default function SearchModeTabs({ current = 'album', tone = 'default' }) 
 
   const homeTone = tone === 'home';
   const containerClass = homeTone
-    ? 'flex w-full items-end gap-1.5 border-b border-slate-300/90 dark:border-slate-700/90'
-    : 'flex w-full items-end gap-1 border-b border-slate-200/90 dark:border-slate-700/90';
+    ? 'flex w-full items-end gap-1.5 border-b border-slate-400/90 dark:border-slate-700/90'
+    : 'flex w-full items-end gap-1 border-b border-slate-300/90 dark:border-slate-700/90';
 
   return (
     <div className="w-full">
@@ -18,11 +18,11 @@ export default function SearchModeTabs({ current = 'album', tone = 'default' }) 
         {items.map((item) => {
           const active = current === item.key;
           const activeClass = homeTone
-            ? 'z-10 border-slate-300/90 border-b-slate-50 bg-white/95 text-slate-950 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.18)] dark:border-slate-600 dark:border-b-slate-900 dark:bg-slate-900/95 dark:text-slate-50'
-            : 'z-10 border-slate-200 border-b-slate-50 bg-slate-50 text-sky-700 shadow-sm dark:border-slate-700 dark:border-b-slate-900 dark:bg-slate-900 dark:text-sky-300';
+            ? 'z-10 border-slate-400/90 border-b-white bg-white text-slate-950 shadow-[0_10px_24px_-18px_rgba(15,23,42,0.18)] dark:border-slate-600 dark:border-b-slate-900 dark:bg-slate-900/95 dark:text-slate-50'
+            : 'z-10 border-slate-300/90 border-b-white bg-slate-50 text-sky-700 shadow-sm dark:border-slate-700 dark:border-b-slate-900 dark:bg-slate-900 dark:text-sky-300';
           const inactiveClass = homeTone
-            ? 'border-transparent bg-slate-100/55 text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:bg-slate-800/20 dark:text-slate-400 dark:hover:bg-slate-800/55 dark:hover:text-slate-200'
-            : 'border-transparent bg-slate-100/40 text-slate-600 hover:bg-slate-200/80 hover:text-slate-900 dark:bg-slate-800/20 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white';
+            ? 'border-slate-300/70 bg-slate-100/75 text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:border-transparent dark:bg-slate-800/20 dark:text-slate-400 dark:hover:bg-slate-800/55 dark:hover:text-slate-200'
+            : 'border-slate-300/65 bg-slate-100/60 text-slate-600 hover:bg-slate-200/85 hover:text-slate-900 dark:border-transparent dark:bg-slate-800/20 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white';
 
           return (
             <Link

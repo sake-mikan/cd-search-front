@@ -844,13 +844,13 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
     );
   };
 
-  const renderTrackField = (value, token, label) => {
+  const renderTrackField = (value, token, label, allowCopy = true) => {
     const text = showValue(value);
     const clip = text === '-' ? '' : text;
     return (
       <div className="flex items-start justify-between gap-2">
         <span className="break-words">{text}</span>
-        {renderCopyIcon(clip, token, label)}
+        {allowCopy ? renderCopyIcon(clip, token, label) : null}
       </div>
     );
   };
@@ -1836,7 +1836,7 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
                   <td className="border-b border-r border-slate-200 px-3 py-3 align-top last:border-r-0 dark:border-slate-600">{renderLinkedPeopleField(track?.credits?.composer, `t-${track.id}-composer`, '\u4f5c\u66f2', 'composer', trackLinkedPeopleClass)}</td>
                   <td className="border-b border-r border-slate-200 px-3 py-3 align-top last:border-r-0 dark:border-slate-600">{renderLinkedPeopleField(track?.credits?.arranger, `t-${track.id}-arranger`, '\u7de8\u66f2', 'arranger', trackLinkedPeopleClass)}</td>
                   <td className="border-b border-r border-slate-200 px-3 py-3 align-top last:border-r-0 dark:border-slate-600">{renderTrackField(track.genre, `t-${track.id}-genre`, '\u30b8\u30e3\u30f3\u30eb')}</td>
-                  <td className="border-b border-r border-slate-200 px-3 py-3 align-top last:border-r-0 dark:border-slate-600">{renderTrackField(track.duration, `t-${track.id}-duration`, '\u6642\u9593')}</td>
+                  <td className="border-b border-r border-slate-200 px-3 py-3 align-top last:border-r-0 dark:border-slate-600">{renderTrackField(track.duration, `t-${track.id}-duration`, '\u6642\u9593', false)}</td>
                   <td className="border-b border-r border-slate-200 px-3 py-3 align-top last:border-r-0 dark:border-slate-600">{renderTrackField(track.comment, `t-${track.id}-comment`, '\u30b3\u30e1\u30f3\u30c8')}</td>
                 </tr>
               )}
@@ -1861,7 +1861,7 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
                         <div><p className={detailLabelClass}>{'\u4f5c\u66f2'}</p><div className={detailValueWrapClass}>{renderLinkedPeopleField(track?.credits?.composer, `m-${track.id}-composer`, '\u4f5c\u66f2', 'composer')}</div></div>
                         <div><p className={detailLabelClass}>{'\u7de8\u66f2'}</p><div className={detailValueWrapClass}>{renderLinkedPeopleField(track?.credits?.arranger, `m-${track.id}-arranger`, '\u7de8\u66f2', 'arranger')}</div></div>
                         <div><p className={detailLabelClass}>{'\u30b8\u30e3\u30f3\u30eb'}</p><div className={detailValueWrapClass}>{renderTrackField(track.genre, `m-${track.id}-genre`, '\u30b8\u30e3\u30f3\u30eb')}</div></div>
-                        <div><p className={detailLabelClass}>{'\u6642\u9593'}</p><div className={detailValueWrapClass}>{renderTrackField(track.duration, `m-${track.id}-duration`, '\u6642\u9593')}</div></div>
+                        <div><p className={detailLabelClass}>{'\u6642\u9593'}</p><div className={detailValueWrapClass}>{renderTrackField(track.duration, `m-${track.id}-duration`, '\u6642\u9593', false)}</div></div>
                         <div><p className={detailLabelClass}>{'\u30b3\u30e1\u30f3\u30c8'}</p><div className={detailValueWrapClass}>{renderTrackField(track.comment, `m-${track.id}-comment`, '\u30b3\u30e1\u30f3\u30c8')}</div></div>
                       </div>
                     </details>

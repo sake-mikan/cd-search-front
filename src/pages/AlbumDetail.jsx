@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Check, Copy, File, FolderOpen, Loader2, Moon, RotateCcw, Sun, WandSparkles } from 'lucide-react';
 import { buildApiUrl } from "../api/baseUrl";
 import SiteFooter from "../components/SiteFooter";
+import SiteBrandHeader from '../components/SiteBrandHeader';
 import TrackList from '../components/TrackList';
 import { formatInfoTimestamp } from "../utils/formatDateTime";
 import { formatDateDisplay } from "../utils/formatDateDisplay";
@@ -1361,27 +1362,31 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
         {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
         <span>{themeLabel}</span>
       </button>
-      <div className="mx-auto mb-3 flex max-w-7xl items-center justify-between gap-2">
-        <button
-          type="button"
-          onClick={() => navigate('/')}
-          className={primaryButtonClass}
-        >
-          一覧へ戻る
-        </button>
-        <button
-          type="button"
-          onClick={onToggleTheme}
-          className={`${mobileThemeButtonClass} lg:hidden`}
-          title={themeTitle}
-          aria-label={themeTitle}
-        >
-          {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
-          <span>{themeLabel}</span>
-        </button>
-      </div>
 
       <div className={`${pageCardClass} max-w-7xl`}>
+        <SiteBrandHeader
+          actions={
+            <>
+              <button
+                type="button"
+                onClick={() => navigate('/')}
+                className={primaryButtonClass}
+              >
+                {'一覧へ戻る'}
+              </button>
+              <button
+                type="button"
+                onClick={onToggleTheme}
+                className={`${mobileThemeButtonClass} !hidden`}
+                title={themeTitle}
+                aria-label={themeTitle}
+              >
+                {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+                <span>{themeLabel}</span>
+              </button>
+            </>
+          }
+        />
         <section className={heroPanelClass}>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0 flex-1 space-y-3">

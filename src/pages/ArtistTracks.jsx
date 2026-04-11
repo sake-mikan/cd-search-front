@@ -5,11 +5,12 @@ import { buildApiUrl } from '../api/baseUrl';
 import InfoCard from '../components/InfoCard';
 import PageHeaderCard from '../components/PageHeaderCard';
 import ResponsiveResultList from '../components/ResponsiveResultList';
+import SiteBrandHeader from '../components/SiteBrandHeader';
 import SiteFooter from '../components/SiteFooter';
 import { getAlbumRoutePath } from '../utils/albumPublicId';
 import { getArtistRouteId } from '../utils/artistPublicId';
 import { formatDateDisplay } from '../utils/formatDateDisplay';
-import { PageBackdrop, pageCardClass, pageShellClass, secondaryButtonClass, floatingThemeButtonClass } from '../utils/uiTheme';
+import { PageBackdrop, pageCardClass, pageShellClass, secondaryButtonClass, floatingThemeButtonClass, mobileThemeButtonClass, primaryButtonClass } from '../utils/uiTheme';
 
 function formatAlbumTitle(album) {
   const title = String(album?.title ?? '').trim();
@@ -193,14 +194,29 @@ export default function ArtistTracks({ isDarkMode = false, onToggleTheme = () =>
         <span>{themeLabel}</span>
       </button>
       <div className={`${pageCardClass} max-w-6xl space-y-6`}>
+        <SiteBrandHeader
+          actions={<>
+            <button type="button" onClick={() => navigate(-1)} className={primaryButtonClass}>
+              {'戻る'}
+            </button>
+            <button
+              type="button"
+              onClick={onToggleTheme}
+              className={`${mobileThemeButtonClass} !hidden`}
+              title={themeTitle}
+              aria-label={themeTitle}
+            >
+              {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+              <span>{themeLabel}</span>
+            </button>
+          </>}
+        />
         <PageHeaderCard
           maxWidthClass="max-w-6xl"
           isDarkMode={isDarkMode}
           onToggleTheme={onToggleTheme}
           showFloatingThemeButton={false}
-          showMobileThemeButton={true}
-          backLabel="戻る"
-          onBack={() => navigate(-1)}
+          showMobileThemeButton={false}
           badge="TRACK RELATION"
           badgeIcon={ListMusic}
           title={`${artistName} の関連曲`}

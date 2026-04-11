@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ExternalLink, Moon, Sun } from 'lucide-react';
 import SiteFooter from '../components/SiteFooter';
 import MusicBrainzTagWritePanel from '../components/MusicBrainzTagWritePanel';
+import SiteBrandHeader from '../components/SiteBrandHeader';
 import { fetchMusicBrainzAlbumDetail, requestMusicBrainzAlbum } from '../api/albums';
 import { formatDateDisplay } from '../utils/formatDateDisplay';
 import { formatReleaseTypeLabel } from '../utils/releaseTypeLabel';
@@ -10,6 +11,7 @@ import {
   PageBackdrop,
   floatingThemeButtonClass,
   heroPanelClass,
+  mobileThemeButtonClass,
   outlineButtonClass,
   pageCardClass,
   pageShellClass,
@@ -158,11 +160,25 @@ export default function MusicBrainzAlbumDetail({ isDarkMode = false, onToggleThe
       </button>
 
       <div className={`${pageCardClass} max-w-7xl`}>
-        <div className="mb-4">
-          <button type="button" onClick={handleBack} className={primaryButtonClass}>
-            {'\u4e00\u89a7\u3078\u623b\u308b'}
-          </button>
-        </div>
+        <SiteBrandHeader
+          actions={
+            <>
+              <button type="button" onClick={handleBack} className={primaryButtonClass}>
+                {'一覧へ戻る'}
+              </button>
+              <button
+                type="button"
+                onClick={onToggleTheme}
+                className={`${mobileThemeButtonClass} !hidden`}
+                title={themeTitle}
+                aria-label={themeTitle}
+              >
+                {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+                <span>{themeLabel}</span>
+              </button>
+            </>
+          }
+        />
 
         <section className={heroPanelClass}>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">

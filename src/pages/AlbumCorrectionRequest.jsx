@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { RefreshCw, Send } from 'lucide-react';
+import { Moon, RefreshCw, Send, Sun } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { fetchAlbumCorrectionRequestForm, submitAlbumCorrectionRequest } from '../api/correctionRequests';
 import InfoCard from '../components/InfoCard';
 import PageHeaderCard from '../components/PageHeaderCard';
+import SiteBrandHeader from '../components/SiteBrandHeader';
 import SiteFooter from '../components/SiteFooter';
 import { getAlbumRouteId, getAlbumRoutePath } from '../utils/albumPublicId';
 import { formatInfoTimestamp } from '../utils/formatDateTime';
@@ -15,7 +16,9 @@ import {
   PageBackdrop,
   panelMutedClass,
   primaryButtonClass,
+  mobileThemeButtonClass,
   textareaClass,
+  floatingThemeButtonClass,
 } from '../utils/uiTheme';
 
 const LABELS = {
@@ -280,13 +283,40 @@ export default function AlbumCorrectionRequest({ isDarkMode = false, onToggleThe
   return (
     <div className={pageShellClass}>
       <PageBackdrop />
+      <button
+        type="button"
+        onClick={onToggleTheme}
+        className={floatingThemeButtonClass}
+        title={isDarkMode ? '\u30e9\u30a4\u30c8\u30e2\u30fc\u30c9\u306b\u5207\u308a\u66ff\u3048' : '\u30c0\u30fc\u30af\u30e2\u30fc\u30c9\u306b\u5207\u308a\u66ff\u3048'}
+        aria-label={isDarkMode ? '\u30e9\u30a4\u30c8\u30e2\u30fc\u30c9\u306b\u5207\u308a\u66ff\u3048' : '\u30c0\u30fc\u30af\u30e2\u30fc\u30c9\u306b\u5207\u308a\u66ff\u3048'}
+      >
+        {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+        <span>{isDarkMode ? '\u30e9\u30a4\u30c8' : '\u30c0\u30fc\u30af'}</span>
+      </button>
       <div className={`${pageCardClass} max-w-4xl space-y-6`}>
+        <SiteBrandHeader
+          actions={<>
+            <button type="button" onClick={() => navigate(getAlbumRoutePath(album, id))} className={primaryButtonClass}>
+              {LABELS.backToAlbum}
+            </button>
+            <button
+              type="button"
+              onClick={onToggleTheme}
+              className={`${mobileThemeButtonClass} !hidden`}
+              title={isDarkMode ? '\u30e9\u30a4\u30c8\u30e2\u30fc\u30c9\u306b\u5207\u308a\u66ff\u3048' : '\u30c0\u30fc\u30af\u30e2\u30fc\u30c9\u306b\u5207\u308a\u66ff\u3048'}
+              aria-label={isDarkMode ? '\u30e9\u30a4\u30c8\u30e2\u30fc\u30c9\u306b\u5207\u308a\u66ff\u3048' : '\u30c0\u30fc\u30af\u30e2\u30fc\u30c9\u306b\u5207\u308a\u66ff\u3048'}
+            >
+              {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+              <span>{isDarkMode ? '\u30e9\u30a4\u30c8' : '\u30c0\u30fc\u30af'}</span>
+            </button>
+          </>}
+        />
         <PageHeaderCard
           maxWidthClass="max-w-4xl"
           isDarkMode={isDarkMode}
           onToggleTheme={onToggleTheme}
-          backLabel={LABELS.backToAlbum}
-          onBack={() => navigate(getAlbumRoutePath(album, id))}
+          showFloatingThemeButton={false}
+          showMobileThemeButton={false}
           badge="CORRECTION REQUEST"
           title={LABELS.pageTitle}
           subtitle={`${LABELS.pageLeadPrimary} ${LABELS.pageLeadSecondary}`}

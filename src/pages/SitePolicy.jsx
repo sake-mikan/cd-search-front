@@ -1,7 +1,9 @@
+import { Moon, Sun } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import PageHeaderCard from '../components/PageHeaderCard';
+import SiteBrandHeader from '../components/SiteBrandHeader';
 import SiteFooter from '../components/SiteFooter';
-import { PageBackdrop, pageCardClass, pageShellClass, panelClass } from '../utils/uiTheme';
+import { PageBackdrop, pageCardClass, pageShellClass, panelClass, mobileThemeButtonClass, primaryButtonClass } from '../utils/uiTheme';
 
 const sections = [
   {
@@ -54,16 +56,31 @@ export default function SitePolicy({ isDarkMode = false, onToggleTheme = () => {
       <PageBackdrop />
 
       <div className={`${pageCardClass} max-w-5xl`}>
+        <SiteBrandHeader
+          actions={<>
+            <button type="button" onClick={() => navigate('/')} className={primaryButtonClass}>
+              {'トップへ戻る'}
+            </button>
+            <button
+              type="button"
+              onClick={onToggleTheme}
+              className={`${mobileThemeButtonClass} !hidden`}
+              title={isDarkMode ? '\u30e9\u30a4\u30c8\u30e2\u30fc\u30c9\u306b\u5207\u308a\u66ff\u3048' : '\u30c0\u30fc\u30af\u30e2\u30fc\u30c9\u306b\u5207\u308a\u66ff\u3048'}
+              aria-label={isDarkMode ? '\u30e9\u30a4\u30c8\u30e2\u30fc\u30c9\u306b\u5207\u308a\u66ff\u3048' : '\u30c0\u30fc\u30af\u30e2\u30fc\u30c9\u306b\u5207\u308a\u66ff\u3048'}
+            >
+              {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+              <span>{isDarkMode ? '\u30e9\u30a4\u30c8' : '\u30c0\u30fc\u30af'}</span>
+            </button>
+          </>}
+        />
         <PageHeaderCard
           maxWidthClass="max-w-5xl"
           isDarkMode={isDarkMode}
           onToggleTheme={onToggleTheme}
-          backLabel={'トップへ戻る'}
-          onBack={() => navigate('/')}
+          showMobileThemeButton={false}
           badge={'SITE POLICY'}
           title={'サイトポリシー'}
           subtitle={'このサイトの目的、利用できる機能、外部情報の扱い、免責事項などをまとめています。'}
-          showMobileThemeButton
         />
 
         <div className="grid gap-4">

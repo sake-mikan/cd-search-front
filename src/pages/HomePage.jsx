@@ -1,7 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowDown, ArrowUp, ArrowUpDown, CalendarDays, CalendarRange, ChevronLeft, ChevronRight, FilePenLine, Moon, Search, ShieldCheck, Sparkles, Sun } from 'lucide-react';
-import DiscMasterLogo from '../components/DiscMasterLogo';
+import { ArrowDown, ArrowUp, ArrowUpDown, CalendarDays, CalendarRange, ChevronLeft, ChevronRight, Moon, Search, Sparkles, Sun } from 'lucide-react';
 import {
   fetchAllAlbums,
   fetchAlbumSuggestions,
@@ -10,8 +9,10 @@ import {
 import InfoCard from '../components/InfoCard';
 import PageHeaderCard from '../components/PageHeaderCard';
 import ResponsiveResultList from '../components/ResponsiveResultList';
-import SearchModeTabs from '../components/SearchModeTabs';
+import SearchHeroCard from '../components/SearchHeroCard';
+import SiteBrandHeader from '../components/SiteBrandHeader';
 import SiteFooter from '../components/SiteFooter';
+import SearchValueHighlights from '../components/SearchValueHighlights';
 import { getAlbumRoutePath } from '../utils/albumPublicId';
 import { formatDateDisplay } from '../utils/formatDateDisplay';
 import { formatReleaseTypeLabelJa } from '../utils/releaseTypeLabel';
@@ -568,90 +569,54 @@ export default function HomePage({ isDarkMode = false, onToggleTheme = () => {} 
         <span>{themeLabel}</span>
       </button>
       <div className={`${pageCardClass} max-w-7xl space-y-1`}>
-        <div className="px-1 pt-1 sm:px-2">
-          <DiscMasterLogo />
-        </div>
-
-        <div className="grid gap-2.5 lg:grid-cols-2">
-          <div className="relative overflow-hidden rounded-[20px] border border-sky-300/35 bg-gradient-to-br from-sky-500/12 via-cyan-500/8 to-slate-900/5 p-3.5 shadow-[0_12px_32px_-22px_rgba(14,165,233,0.42)] ring-1 ring-sky-400/10 dark:border-sky-400/16 dark:from-sky-400/14 dark:via-cyan-400/10 dark:to-slate-950/24">
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(56,189,248,0.22),transparent_45%)]" />
-            <div className="relative flex items-start gap-2.5">
-              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[16px] bg-sky-500 text-white shadow-md shadow-sky-500/20">
-                <FilePenLine className="h-[15px] w-[15px]" />
-              </span>
-              <div className="space-y-0.5">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-sky-700 dark:text-sky-300">{'タグ書き込み機能'}</p>
-                <p className="text-[13px] font-semibold leading-5 text-slate-900 dark:text-slate-100">{'対応ブラウザではローカルファイルへ楽曲情報を直接書き込めます。'}</p>
-              </div>
-            </div>
-          </div>
-          <div className="relative overflow-hidden rounded-[20px] border border-emerald-300/35 bg-gradient-to-br from-emerald-500/12 via-teal-500/8 to-slate-900/5 p-3.5 shadow-[0_12px_32px_-22px_rgba(16,185,129,0.38)] ring-1 ring-emerald-400/10 dark:border-emerald-400/16 dark:from-emerald-400/14 dark:via-teal-400/10 dark:to-slate-950/24">
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(52,211,153,0.18),transparent_45%)]" />
-            <div className="relative flex items-start gap-2.5">
-              <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[16px] bg-emerald-500 text-white shadow-md shadow-emerald-500/20">
-                <ShieldCheck className="h-[15px] w-[15px]" />
-              </span>
-              <div className="space-y-0.5">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700 dark:text-emerald-300">{'アップロード不要'}</p>
-                <p className="text-[13px] font-semibold leading-5 text-slate-900 dark:text-slate-100">{'音楽ファイルはサーバーへアップロードされません。ローカル環境内で処理できます。'}</p>
-              </div>
-            </div>
-          </div>
-        </div>
+        <SiteBrandHeader />
+        <SearchValueHighlights />
         <PageHeaderCard
           maxWidthClass="max-w-7xl"
           isDarkMode={isDarkMode}
           onToggleTheme={onToggleTheme}
           showFloatingThemeButton={false}
-          showMobileThemeButton={true}
+          showMobileThemeButton={false}
           sectionClassName="-mt-3 mb-0 overflow-visible rounded-none border-0 bg-none bg-transparent px-0 py-0 shadow-none"
         >
-          <div className="-mx-4 space-y-0 sm:-mx-6">
-            <SearchModeTabs current="album" />
-            <div className="-mt-px space-y-3 rounded-b-[24px] border border-slate-200/90 border-t-0 bg-slate-50/30 px-4 py-3 dark:border-slate-700/90 dark:bg-slate-900/20 sm:px-5 sm:py-4">
-              <div className="space-y-3 pb-2 pt-1">
-                <span className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-3 py-1 text-[11px] font-medium tracking-[0.18em] text-white shadow-sm dark:bg-white dark:text-slate-900">
-                  <Sparkles className="h-3.5 w-3.5" />
-                  <span>CD SEARCH</span>
-                </span>
-                <div className="space-y-1.5">
-                  <h1 className="text-[1.75rem] font-bold tracking-tight text-slate-900 sm:text-[1.9rem] dark:text-white">{'\u0043\u0044\u691c\u7d22'}</h1>
-                  <p className="max-w-3xl text-sm leading-6 text-slate-600 dark:text-slate-300">{'\u30bf\u30a4\u30c8\u30eb\u30fb\u30a2\u30fc\u30c6\u30a3\u30b9\u30c8\u30fb\u898f\u683c\u54c1\u756a\u30fb\u767a\u58f2\u65e5\u3067\u0043\u0044\u3092\u691c\u7d22\u3067\u304d\u307e\u3059\u3002'}</p>
-                </div>
-                <div className="h-px w-full bg-slate-200/90 dark:bg-slate-700/80" />
-              </div>
-              <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,0.9fr)_minmax(0,0.8fr)_auto_auto] xl:items-end">
+          <SearchHeroCard
+            current="album"
+            badge="CD SEARCH"
+            badgeIcon={Sparkles}
+            title={'\u0043\u0044\u691c\u7d22'}
+            subtitle={'\u30bf\u30a4\u30c8\u30eb\u30fb\u30a2\u30fc\u30c6\u30a3\u30b9\u30c8\u30fb\u898f\u683c\u54c1\u756a\u30fb\u767a\u58f2\u65e5\u3067\u0043\u0044\u3092\u691c\u7d22\u3067\u304d\u307e\u3059\u3002'}
+          >
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,0.9fr)_minmax(0,0.8fr)_auto_auto] xl:items-end">
               <label className="space-y-2 text-sm">
-                <span className="text-xs font-medium uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">{'タイトル'}</span>
-                <input type="text" value={title} onChange={(event) => setTitle(event.target.value)} list="album-title-suggestions" placeholder={'例: MILLION C@STING 03'} className={inputClass} />
+                <span className="text-xs font-medium uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">{'\u30bf\u30a4\u30c8\u30eb'}</span>
+                <input type="text" value={title} onChange={(event) => setTitle(event.target.value)} list="album-title-suggestions" placeholder={'\u4f8b: MILLION C@STING 03'} className={inputClass} />
                 <datalist id="album-title-suggestions">
                   {titleSuggestions.map((item) => <option key={item} value={item} />)}
                 </datalist>
               </label>
               <label className="space-y-2 text-sm">
-                <span className="text-xs font-medium uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">{'アーティスト'}</span>
-                <input type="text" value={artist} onChange={(event) => setArtist(event.target.value)} list="album-artist-suggestions" placeholder={'例: STAR ELEMENTS'} className={inputClass} />
+                <span className="text-xs font-medium uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">{'\u30a2\u30fc\u30c6\u30a3\u30b9\u30c8'}</span>
+                <input type="text" value={artist} onChange={(event) => setArtist(event.target.value)} list="album-artist-suggestions" placeholder={'\u4f8b: STAR ELEMENTS'} className={inputClass} />
                 <datalist id="album-artist-suggestions">
                   {artistSuggestions.map((item) => <option key={item} value={item} />)}
                 </datalist>
               </label>
               <label className="space-y-2 text-sm">
-                <span className="text-xs font-medium uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">{'規格品番'}</span>
-                <input type="text" value={catalogNumber} onChange={(event) => setCatalogNumber(event.target.value)} list="album-catalog-suggestions" placeholder={'例: LACM-14080'} className={inputClass} />
+                <span className="text-xs font-medium uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">{'\u898f\u683c\u54c1\u756a'}</span>
+                <input type="text" value={catalogNumber} onChange={(event) => setCatalogNumber(event.target.value)} list="album-catalog-suggestions" placeholder={'\u4f8b: LACM-14080'} className={inputClass} />
                 <datalist id="album-catalog-suggestions">
                   {catalogSuggestions.map((item) => <option key={item} value={item} />)}
                 </datalist>
               </label>
               <label className="space-y-2 text-sm">
-                <span className="text-xs font-medium uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">{'発売日'}</span>
+                <span className="text-xs font-medium uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">{'\u767a\u58f2\u65e5'}</span>
                 <input type="date" value={releaseDate} onChange={(event) => setReleaseDate(event.target.value)} className={inputClass} />
               </label>
-              <button type="submit" className={`${searchSubmitButtonClass} xl:self-end`}><Search className="h-4 w-4" />{'検索'}</button>
-              <button type="button" onClick={handleClear} className={`${clearButtonClass} xl:self-end`}>{'クリア'}</button>
+              <button type="submit" className={`${searchSubmitButtonClass} xl:self-end`}><Search className="h-4 w-4" />{'\u691c\u7d22'}</button>
+              <button type="button" onClick={handleClear} className={`${clearButtonClass} xl:self-end`}>{'\u30af\u30ea\u30a2'}</button>
             </form>
             {!loading && error ? <p className="text-sm text-red-600 dark:text-red-300">{error}</p> : null}
-            </div>
-          </div>
+          </SearchHeroCard>
         </PageHeaderCard>
         {!hasSearched ? (
           <InfoCard className="-mt-3 space-y-4">

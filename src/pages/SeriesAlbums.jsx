@@ -5,10 +5,11 @@ import { buildApiUrl } from '../api/baseUrl';
 import InfoCard from '../components/InfoCard';
 import PageHeaderCard from '../components/PageHeaderCard';
 import ResponsiveResultList from '../components/ResponsiveResultList';
+import SiteBrandHeader from '../components/SiteBrandHeader';
 import SiteFooter from '../components/SiteFooter';
 import { getAlbumRoutePath } from '../utils/albumPublicId';
 import { formatDateDisplay } from '../utils/formatDateDisplay';
-import { PageBackdrop, pageCardClass, pageShellClass, secondaryButtonClass, floatingThemeButtonClass } from '../utils/uiTheme';
+import { PageBackdrop, pageCardClass, pageShellClass, secondaryButtonClass, floatingThemeButtonClass, mobileThemeButtonClass, primaryButtonClass } from '../utils/uiTheme';
 
 function formatAlbumTitle(album) {
   const title = String(album?.title ?? '').trim();
@@ -174,14 +175,29 @@ export default function SeriesAlbums({ isDarkMode = false, onToggleTheme = () =>
         <span>{themeLabel}</span>
       </button>
       <div className={`${pageCardClass} max-w-6xl space-y-6`}>
+        <SiteBrandHeader
+          actions={<>
+            <button type="button" onClick={() => navigate(-1)} className={primaryButtonClass}>
+              {'戻る'}
+            </button>
+            <button
+              type="button"
+              onClick={onToggleTheme}
+              className={`${mobileThemeButtonClass} !hidden`}
+              title={themeTitle}
+              aria-label={themeTitle}
+            >
+              {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+              <span>{themeLabel}</span>
+            </button>
+          </>}
+        />
         <PageHeaderCard
           maxWidthClass="max-w-6xl"
           isDarkMode={isDarkMode}
           onToggleTheme={onToggleTheme}
           showFloatingThemeButton={false}
-          showMobileThemeButton={true}
-          backLabel={'\u623b\u308b'}
-          onBack={() => navigate(-1)}
+          showMobileThemeButton={false}
           badge="SERIES ALBUMS"
           badgeIcon={Layers3}
           title={`${seriesName} \u306e\u30a2\u30eb\u30d0\u30e0\u4e00\u89a7`}

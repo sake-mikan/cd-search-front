@@ -6,7 +6,9 @@ import SiteFooter from '../components/SiteFooter';
 import InfoCard from '../components/InfoCard';
 import PageHeaderCard from '../components/PageHeaderCard';
 import ResponsiveResultList from '../components/ResponsiveResultList';
-import SearchModeTabs from '../components/SearchModeTabs';
+import SearchHeroCard from '../components/SearchHeroCard';
+import SiteBrandHeader from '../components/SiteBrandHeader';
+import SearchValueHighlights from '../components/SearchValueHighlights';
 import { getAlbumRoutePath } from '../utils/albumPublicId';
 import { inputClass, pageCardClass, pageShellClass, secondaryButtonClass, PageBackdrop, floatingThemeButtonClass } from '../utils/uiTheme';
 
@@ -258,29 +260,32 @@ export default function TrackSearch({ isDarkMode = false, onToggleTheme = () => 
         {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
         <span>{themeLabel}</span>
       </button>
-      <div className={`${pageCardClass} max-w-7xl space-y-6`}>
+      <div className={`${pageCardClass} max-w-7xl space-y-1`}>
+        <SiteBrandHeader />
+        <SearchValueHighlights />
         <PageHeaderCard
           maxWidthClass="max-w-7xl"
-          badge="TRACK SEARCH"
-          badgeIcon={Music4}
-          title="楽曲名検索"
-          subtitle="曲名から収録アルバムやクレジットを横断して探せます。"
           isDarkMode={isDarkMode}
           onToggleTheme={onToggleTheme}
           showFloatingThemeButton={false}
-          showMobileThemeButton={true}
+          showMobileThemeButton={false}
+          sectionClassName="mb-0 overflow-visible rounded-none border-0 bg-none bg-transparent px-0 py-0 shadow-none"
         >
-          <div className="space-y-0">
-            <SearchModeTabs current="track" />
-            <div className="-mt-px space-y-4 rounded-b-[24px] border border-slate-200/90 border-t-0 bg-slate-50/30 p-4 dark:border-slate-700/90 dark:bg-slate-900/20">
+          <SearchHeroCard
+            current="track"
+            badge="TRACK SEARCH"
+            badgeIcon={Music4}
+            title={'\u697d\u66f2\u540d\u691c\u7d22'}
+            subtitle={'\u66f2\u540d\u304b\u3089\u53ce\u9332\u30a2\u30eb\u30d0\u30e0\u3084\u30af\u30ec\u30b8\u30c3\u30c8\u3092\u6a2a\u65ad\u3057\u3066\u63a2\u305b\u307e\u3059\u3002'}
+          >
             <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_auto_auto] md:items-end">
               <label className="space-y-2 text-sm">
-                <span className="text-xs font-medium uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">曲名</span>
+                <span className="text-xs font-medium uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">{'\u66f2\u540d'}</span>
                 <input
                   type="text"
                   value={title}
                   onChange={(event) => setTitle(event.target.value)}
-                  placeholder="例: Thank You!"
+                  placeholder={'\u4f8b: Thank You!'}
                   className={inputClass}
                   required
                 />
@@ -288,8 +293,7 @@ export default function TrackSearch({ isDarkMode = false, onToggleTheme = () => 
               <button type="submit" className={`${searchSubmitButtonClass} md:self-end`}><Search className="h-4 w-4" />{'\u691c\u7d22'}</button>
               <button type="button" onClick={handleClear} className={`${clearButtonClass} md:self-end`}>{'\u30af\u30ea\u30a2'}</button>
             </form>
-            </div>
-          </div>
+          </SearchHeroCard>
         </PageHeaderCard>
 
         {!hasSearched ? (

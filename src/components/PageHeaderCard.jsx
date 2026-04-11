@@ -25,8 +25,9 @@ export default function PageHeaderCard({
   showMobileThemeButton = true,
   sectionClassName = '',
 }) {
-  const themeLabel = isDarkMode ? 'ライト' : 'ダーク';
-  const themeTitle = isDarkMode ? 'ライトモードに切り替え' : 'ダークモードに切り替え';
+  const themeLabel = isDarkMode ? '\u30e9\u30a4\u30c8' : '\u30c0\u30fc\u30af';
+  const themeTitle = isDarkMode ? '\u30e9\u30a4\u30c8\u30e2\u30fc\u30c9\u306b\u5207\u308a\u66ff\u3048' : '\u30c0\u30fc\u30af\u30e2\u30fc\u30c9\u306b\u5207\u308a\u66ff\u3048';
+  const shouldShowTopControls = Boolean(backLabel) || showMobileThemeButton;
 
   return (
     <>
@@ -43,28 +44,30 @@ export default function PageHeaderCard({
         </button>
       ) : null}
 
-      <div className={['mx-auto mb-3 flex items-center justify-between gap-2 lg:justify-start', maxWidthClass].join(' ')}>
-        {backLabel ? (
-          <button type="button" onClick={onBack} className={backButtonClass}>
-            {backLabel}
-          </button>
-        ) : (
-          <span />
-        )}
+      {shouldShowTopControls ? (
+        <div className={['mx-auto mb-3 flex items-center justify-between gap-2 lg:justify-start', maxWidthClass].join(' ')}>
+          {backLabel ? (
+            <button type="button" onClick={onBack} className={backButtonClass}>
+              {backLabel}
+            </button>
+          ) : (
+            <span />
+          )}
 
-        {showMobileThemeButton ? (
-          <button
-            type="button"
-            onClick={onToggleTheme}
-            className={`${mobileThemeButtonClass} lg:hidden`}
-            title={themeTitle}
-            aria-label={themeTitle}
-          >
-            {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
-            <span>{themeLabel}</span>
-          </button>
-        ) : null}
-      </div>
+          {showMobileThemeButton ? (
+            <button
+              type="button"
+              onClick={onToggleTheme}
+              className={`${mobileThemeButtonClass} lg:hidden`}
+              title={themeTitle}
+              aria-label={themeTitle}
+            >
+              {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+              <span>{themeLabel}</span>
+            </button>
+          ) : null}
+        </div>
+      ) : null}
 
       <section className={[heroPanelClass, sectionClassName].filter(Boolean).join(' ')}>
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">

@@ -1,4 +1,4 @@
-﻿export const pageShellClass =
+export const pageShellClass =
   'relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top,_#eff6ff_0%,_#f8fafc_45%,_#eef2ff_100%)] px-3 pb-6 pt-4 text-gray-900 dark:bg-[radial-gradient(circle_at_top,_#0f172a_0%,_#111827_45%,_#020617_100%)] dark:text-gray-100 sm:p-6';
 
 export const pageCardClass =
@@ -14,7 +14,7 @@ export const panelMutedClass =
   'rounded-[20px] border border-slate-200/70 bg-slate-50/80 px-4 py-4 shadow-sm dark:border-slate-700/70 dark:bg-slate-900/40';
 
 export const floatingThemeButtonClass =
-  'absolute right-3 top-4 z-10 hidden lg:inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-700 shadow hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700 sm:right-6 sm:top-6';
+  'fixed right-3 top-3 z-50 inline-flex h-10 w-10 items-center justify-center gap-0 rounded-full border border-gray-300 bg-white/95 p-0 text-[0] text-gray-700 shadow-lg backdrop-blur transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800/95 dark:text-gray-100 dark:hover:bg-gray-700 sm:right-4 sm:top-4 lg:absolute lg:right-6 lg:top-6 lg:h-auto lg:w-auto lg:gap-2 lg:px-3 lg:py-1.5 lg:text-xs';
 
 export const mobileThemeButtonClass =
   'inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white px-3 py-1.5 text-xs text-gray-700 shadow hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 dark:hover:bg-gray-700';

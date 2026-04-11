@@ -4,8 +4,10 @@ import { ArrowDown, ArrowUp, ArrowUpDown, Grid2x2, Moon, Sun } from 'lucide-reac
 import { fetchAllAlbums, fetchContents } from '../api/albums';
 import PageHeaderCard from '../components/PageHeaderCard';
 import ResponsiveResultList from '../components/ResponsiveResultList';
-import SearchModeTabs from '../components/SearchModeTabs';
+import SearchHeroCard from '../components/SearchHeroCard';
+import SiteBrandHeader from '../components/SiteBrandHeader';
 import SiteFooter from '../components/SiteFooter';
+import SearchValueHighlights from '../components/SearchValueHighlights';
 import { getAlbumRoutePath } from '../utils/albumPublicId';
 import { formatDateDisplay } from '../utils/formatDateDisplay';
 import { PageBackdrop, pageCardClass, pageShellClass, panelClass, secondaryButtonClass, floatingThemeButtonClass } from '../utils/uiTheme';
@@ -285,75 +287,75 @@ export default function ContentSearch({ isDarkMode = false, onToggleTheme = () =
         {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
         <span>{themeLabel}</span>
       </button>
-      <div className={`${pageCardClass} max-w-7xl space-y-6`}>        <div className="space-y-0">
+      <div className={`${pageCardClass} max-w-7xl space-y-1`}>
+        <SiteBrandHeader />
+        <SearchValueHighlights />
         <PageHeaderCard
           maxWidthClass="max-w-7xl"
           isDarkMode={isDarkMode}
           onToggleTheme={onToggleTheme}
           showFloatingThemeButton={false}
-          showMobileThemeButton={true}
-          badge="CONTENT NAVI"
-          badgeIcon={Grid2x2}
-          title="作品から探す"
-          subtitle="コンテンツごとに関連アルバムをまとめて確認できます。"
+          showMobileThemeButton={false}
+          sectionClassName="mb-0 overflow-visible rounded-none border-0 bg-none bg-transparent px-0 py-0 shadow-none"
         >
-          <div className="space-y-0">
-            <SearchModeTabs current="content" />
-            <div className="-mt-px rounded-b-[24px] border border-slate-200/90 border-t-0 bg-slate-50/30 p-4 dark:border-slate-700/90 dark:bg-slate-900/20">
-              <div className="mb-4 space-y-1">
-                <h2 className="text-base font-semibold tracking-tight text-slate-900 dark:text-slate-100">{'\u30ab\u30c6\u30b4\u30ea\u4e00\u89a7'}</h2>
-                <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">{'\u4f5c\u54c1\u3092\u9078\u629e\u3059\u308b\u3068\u8a72\u5f53\u3059\u308b\u30a2\u30eb\u30d0\u30e0\u304c\u8868\u793a\u3055\u308c\u307e\u3059\u3002'}</p>
+          <SearchHeroCard
+            current="content"
+            badge="CONTENT NAVI"
+            badgeIcon={Grid2x2}
+            title={'\u4f5c\u54c1\u304b\u3089\u63a2\u3059'}
+            subtitle={'作品名を選択すると関連アルバムが表示されます。'}
+          >
+            <div className="mb-4 space-y-1">
+              <h2 className="text-base font-semibold tracking-tight text-slate-900 dark:text-slate-100">{'登録コンテンツ一覧'}</h2>
+            </div>
+            {loadingContents ? <p className="text-sm text-slate-500 dark:text-slate-300">{'\u4f5c\u54c1\u4e00\u89a7\u3092\u8aad\u307f\u8fbc\u307f\u4e2d\u3067\u3059\u3002'}</p> : null}
+            {!loadingContents && contentTree.length === 0 ? <p className="text-sm text-red-600 dark:text-red-300">{error || '\u4f5c\u54c1\u4e00\u89a7\u306e\u53d6\u5f97\u306b\u5931\u6557\u3057\u307e\u3057\u305f\u3002'}</p> : null}
+            {!loadingContents && visibleContentTree.length > 0 ? (
+              <div className="space-y-5">
+                {visibleContentTree.map((parent) => (
+                  <section
+                    key={parent.id}
+                    className="rounded-[24px] border border-slate-200/70 bg-gradient-to-br from-slate-50/90 via-white to-white p-4 shadow-sm dark:border-slate-700/70 dark:from-slate-800/90 dark:via-slate-800 dark:to-slate-900"
+                  >
+                    <div className="mb-4 space-y-1">
+                      <h2 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">{parent.name}</h2>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
+                      {(Array.isArray(parent.children) ? parent.children : []).map((child) => {
+                        const active = selectedContentId === String(child.id);
+                        return (
+                          <button
+                            key={child.id}
+                            type="button"
+                            onClick={() => selectContent(child.id)}
+                            className={`rounded-2xl border px-4 py-3 text-left text-sm font-medium transition ${
+                              active
+                                ? 'border-sky-500 bg-sky-50 text-sky-700 shadow-sm dark:border-sky-400/70 dark:bg-sky-500/10 dark:text-sky-200'
+                                : 'border-slate-200 bg-white/90 text-slate-700 hover:border-sky-300 hover:bg-sky-50/70 dark:border-slate-600 dark:bg-slate-800/90 dark:text-slate-100 dark:hover:border-sky-500/40 dark:hover:bg-slate-700/70'
+                            }`}
+                          >
+                            {child.name}
+                          </button>
+                        );
+                      })}
+                      <button
+                        type="button"
+                        onClick={() => selectContent(parent.id)}
+                        className={`rounded-2xl border px-4 py-3 text-left text-sm font-medium transition ${
+                          selectedContentId === String(parent.id)
+                            ? 'border-sky-500 bg-sky-50 text-sky-700 shadow-sm dark:border-sky-400/70 dark:bg-sky-500/10 dark:text-sky-200'
+                            : 'border-slate-200 bg-white/90 text-slate-700 hover:border-sky-300 hover:bg-sky-50/70 dark:border-slate-600 dark:bg-slate-800/90 dark:text-slate-100 dark:hover:border-sky-500/40 dark:hover:bg-slate-700/70'
+                        }`}
+                      >
+                        {'\u5168\u3066'}
+                      </button>
+                    </div>
+                  </section>
+                ))}
               </div>
-{loadingContents ? <p className="text-sm text-slate-500 dark:text-slate-300">作品一覧を読み込み中です。</p> : null}
-          {!loadingContents && contentTree.length === 0 ? <p className="text-sm text-red-600 dark:text-red-300">{error || '作品一覧の取得に失敗しました。'}</p> : null}
-          {!loadingContents && visibleContentTree.length > 0 ? (
-            <div className="space-y-5">
-              {visibleContentTree.map((parent) => (
-                <section
-                  key={parent.id}
-                  className="rounded-[24px] border border-slate-200/70 bg-gradient-to-br from-slate-50/90 via-white to-white p-4 shadow-sm dark:border-slate-700/70 dark:from-slate-800/90 dark:via-slate-800 dark:to-slate-900"
-                >
-                  <div className="mb-4 space-y-1">
-                    <h2 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">{parent.name}</h2>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
-                    {(Array.isArray(parent.children) ? parent.children : []).map((child) => {
-                      const active = selectedContentId === String(child.id);
-                      return (
-                        <button
-                          key={child.id}
-                          type="button"
-                          onClick={() => selectContent(child.id)}
-                          className={`rounded-2xl border px-4 py-3 text-left text-sm font-medium transition ${
-                            active
-                              ? 'border-sky-500 bg-sky-50 text-sky-700 shadow-sm dark:border-sky-400/70 dark:bg-sky-500/10 dark:text-sky-200'
-                              : 'border-slate-200 bg-white/90 text-slate-700 hover:border-sky-300 hover:bg-sky-50/70 dark:border-slate-600 dark:bg-slate-800/90 dark:text-slate-100 dark:hover:border-sky-500/40 dark:hover:bg-slate-700/70'
-                          }`}
-                        >
-                          {child.name}
-                        </button>
-                      );
-                    })}
-                    <button
-                      type="button"
-                      onClick={() => selectContent(parent.id)}
-                      className={`rounded-2xl border px-4 py-3 text-left text-sm font-medium transition ${
-                        selectedContentId === String(parent.id)
-                          ? 'border-sky-500 bg-sky-50 text-sky-700 shadow-sm dark:border-sky-400/70 dark:bg-sky-500/10 dark:text-sky-200'
-                          : 'border-slate-200 bg-white/90 text-slate-700 hover:border-sky-300 hover:bg-sky-50/70 dark:border-slate-600 dark:bg-slate-800/90 dark:text-slate-100 dark:hover:border-sky-500/40 dark:hover:bg-slate-700/70'
-                      }`}
-                    >
-                      全て
-                    </button>
-                  </div>
-                </section>
-              ))}
-            </div>
-          ) : null}
-            </div>
-          </div>
+            ) : null}
+          </SearchHeroCard>
         </PageHeaderCard>
-        </div>
 
         {selectedContentId !== '' ? (
           <section className={panelClass}>

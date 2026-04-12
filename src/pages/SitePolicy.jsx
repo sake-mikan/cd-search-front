@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import PageHeaderCard from '../components/PageHeaderCard';
 import SiteBrandHeader from '../components/SiteBrandHeader';
 import SiteFooter from '../components/SiteFooter';
-import { PageBackdrop, pageCardClass, pageShellClass, panelClass, mobileThemeButtonClass, primaryButtonClass } from '../utils/uiTheme';
+import { PageBackdrop, pageCardClass, pageShellClass, panelClass, floatingThemeButtonClass, primaryButtonClass } from '../utils/uiTheme';
 
 const sections = [
   {
@@ -50,37 +50,49 @@ const sections = [
 
 export default function SitePolicy({ isDarkMode = false, onToggleTheme = () => {} }) {
   const navigate = useNavigate();
+  const themeLabel = isDarkMode ? 'ライト' : 'ダーク';
+  const themeTitle = isDarkMode ? 'ライトモードに切り替え' : 'ダークモードに切り替え';
 
   return (
     <div className={pageShellClass}>
       <PageBackdrop />
 
+      <button
+        type="button"
+        onClick={onToggleTheme}
+        className={`${floatingThemeButtonClass} hidden sm:inline-flex`}
+        title={themeTitle}
+        aria-label={themeTitle}
+      >
+        {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+        <span>{themeLabel}</span>
+      </button>
+
       <div className={`${pageCardClass} max-w-5xl`}>
+        <button
+          type="button"
+          onClick={onToggleTheme}
+          className={`${floatingThemeButtonClass} !absolute !right-4 !top-4 !z-20 !inline-flex sm:!hidden`}
+          title={themeTitle}
+          aria-label={themeTitle}
+        >
+          {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+          <span>{themeLabel}</span>
+        </button>
         <SiteBrandHeader
-          actions={<>
-            <button type="button" onClick={() => navigate('/')} className={primaryButtonClass}>
-              {'トップへ戻る'}
-            </button>
-            <button
-              type="button"
-              onClick={onToggleTheme}
-              className={`${mobileThemeButtonClass} !hidden`}
-              title={isDarkMode ? '\u30e9\u30a4\u30c8\u30e2\u30fc\u30c9\u306b\u5207\u308a\u66ff\u3048' : '\u30c0\u30fc\u30af\u30e2\u30fc\u30c9\u306b\u5207\u308a\u66ff\u3048'}
-              aria-label={isDarkMode ? '\u30e9\u30a4\u30c8\u30e2\u30fc\u30c9\u306b\u5207\u308a\u66ff\u3048' : '\u30c0\u30fc\u30af\u30e2\u30fc\u30c9\u306b\u5207\u308a\u66ff\u3048'}
-            >
-              {isDarkMode ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
-              <span>{isDarkMode ? '\u30e9\u30a4\u30c8' : '\u30c0\u30fc\u30af'}</span>
-            </button>
-          </>}
+          actions={<button type="button" onClick={() => navigate('/')} className={primaryButtonClass}>
+            {'トップへ戻る'}
+          </button>}
         />
         <PageHeaderCard
           maxWidthClass="max-w-5xl"
           isDarkMode={isDarkMode}
           onToggleTheme={onToggleTheme}
+          showFloatingThemeButton={false}
           showMobileThemeButton={false}
           badge={'SITE POLICY'}
           title={'サイトポリシー'}
-          subtitle={'このサイトの目的、利用できる機能、外部情報の扱い、免責事項などをまとめています。'}
+          subtitle={'このサイトの目的、利用できる機能、外部情報の扱い、免責事項などを掲載しています。'}
         />
 
         <div className="grid gap-4">

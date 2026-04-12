@@ -58,6 +58,67 @@ function normalizeTracks(items) {
   });
 }
 
+
+function normalizeDiscType(value) {
+  switch (String(value ?? '').trim().toLowerCase()) {
+    case 'dvd':
+      return 'dvd';
+    case 'bd':
+    case 'blu-ray':
+    case 'bluray':
+    case 'blu_ray':
+      return 'bd';
+    case 'other':
+      return 'other';
+    default:
+      return 'cd';
+  }
+}
+
+function inferDiscTypeFromTracks(tracks) {
+  const combined = (Array.isArray(tracks) ? tracks : [])
+    .flatMap((track) => {
+      const displayTitle = String(track?.display_title ?? '').trim();
+      const title = displayTitle || String(track?.title ?? '').trim();
+      return [title, String(track?.comment ?? '').trim()];
+    })
+    .filter(Boolean)
+    .join('\n');
+
+  if (combined === '') return 'cd';
+  if (/(?:blu[\s-]*ray|blu[\s-]*ray\s*disc|\bBD\b)/iu.test(combined)) return 'bd';
+  if (/(?:\bDVD\b|music\s*video|\bMV\b|making)/iu.test(combined)) return 'dvd';
+  return 'cd';
+}
+
+function buildDiscTypeMap(discs, tracks) {
+  const map = new Map();
+
+  if (Array.isArray(discs)) {
+    discs.forEach((disc) => {
+      const discNumber = Number(disc?.disc_number ?? disc?.disk_number ?? 0);
+      if (!Number.isInteger(discNumber) || discNumber <= 0) return;
+      map.set(discNumber, normalizeDiscType(disc?.disc_type));
+    });
+  }
+
+  const grouped = new Map();
+  for (const track of Array.isArray(tracks) ? tracks : []) {
+    const discNumber = Number(track?.disk_number ?? 1);
+    if (!Number.isInteger(discNumber) || discNumber <= 0) continue;
+    if (!grouped.has(discNumber)) grouped.set(discNumber, []);
+    grouped.get(discNumber).push(track);
+  }
+
+  grouped.forEach((discTracks, discNumber) => {
+    if (!map.has(discNumber)) {
+      map.set(discNumber, inferDiscTypeFromTracks(discTracks));
+    }
+  });
+
+  return map;
+}
+
 function isNamedPersonObject(value) {
   return Boolean(
     value &&
@@ -338,6 +399,16 @@ function sanitizeFileName(name) {
   return filtered.replace(/[. ]+$/g, '').trim();
 }
 
+function buildOutputAlbumFolderName(baseName, discNumber, includeDiscNumber) {
+  const fallbackBaseName = sanitizeFileName(baseName) || 'album';
+  const resolvedDiscNumber = Number(discNumber);
+  if (!includeDiscNumber || !Number.isInteger(resolvedDiscNumber) || resolvedDiscNumber <= 0) {
+    return fallbackBaseName;
+  }
+
+  return sanitizeFileName(`${fallbackBaseName} [Disc${resolvedDiscNumber}]`) || fallbackBaseName;
+}
+
 function buildRenameContext(album, track, releaseYear, albumTitle = '') {
   const credits = track?.credits ?? {};
   return {
@@ -417,6 +488,7 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
   const [isWriting, setIsWriting] = useState(false);
   const [embedCover, setEmbedCover] = useState(false);
   const [renameOnWrite, setRenameOnWrite] = useState(false);
+  const [includeDiscNumberInFolderName, setIncludeDiscNumberInFolderName] = useState(false);
   const [includeEditionInAlbumName, setIncludeEditionInAlbumName] = useState(false);
   const [selectedCoverKey, setSelectedCoverKey] = useState('');
   const [tagCoverKey, setTagCoverKey] = useState('');
@@ -675,25 +747,39 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
     return Array.from(map.entries()).sort((a, b) => a[0] - b[0]);
   }, [orderedTracks]);
 
-  const availableDiscNumbers = useMemo(() => {
+  const discTypeMap = useMemo(() => buildDiscTypeMap(album?.discs, orderedTracks), [album?.discs, orderedTracks]);
+  const taggableTracks = useMemo(
+    () => orderedTracks.filter((track) => normalizeDiscType(discTypeMap.get(Number(track?.disk_number ?? 1))) === 'cd'),
+    [discTypeMap, orderedTracks]
+  );
+  const taggableDiscNumbers = useMemo(() => {
     const values = Array.from(
       new Set(
-        orderedTracks
+        taggableTracks
           .map((track) => Number(track?.disk_number ?? 1))
           .filter((disc) => Number.isInteger(disc) && disc > 0)
       )
     ).sort((a, b) => a - b);
     return values;
-  }, [orderedTracks]);
+  }, [taggableTracks]);
+  const taggableTrackMap = useMemo(
+    () => new Map(taggableTracks.map((track) => [String(track.id), track])),
+    [taggableTracks]
+  );
+  const shouldShowDiscFolderNameOption = taggableDiscNumbers.length > 1;
+
+  useEffect(() => {
+    setIncludeDiscNumberInFolderName(shouldShowDiscFolderNameOption);
+  }, [id, shouldShowDiscFolderNameOption]);
 
   const buildTagRowsFromPickedFiles = useCallback(
     async (pickedItems, options = {}) => {
       const preferredDisc = Number(options?.preferredDisc ?? 0);
       const hasPreferredDisc = Number.isInteger(preferredDisc) && preferredDisc > 0;
       const candidateTracks = hasPreferredDisc
-        ? orderedTracks.filter((track) => Number(track?.disk_number ?? 1) === preferredDisc)
-        : orderedTracks;
-      const sourceTracks = candidateTracks.length > 0 ? candidateTracks : orderedTracks;
+        ? taggableTracks.filter((track) => Number(track?.disk_number ?? 1) === preferredDisc)
+        : taggableTracks;
+      const sourceTracks = candidateTracks.length > 0 ? candidateTracks : taggableTracks;
       const files = await Promise.all(pickedItems.map((item) => item.handle.getFile()));
       const rows = [];
       const usedTrackIds = new Set();
@@ -750,7 +836,7 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
 
       return rows;
     },
-    [orderedTracks]
+    [taggableTracks]
   );
 
   const editionText = useMemo(() => copyValue(album?.edition), [album?.edition]);
@@ -951,8 +1037,8 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
   );
   const handleSelectFiles = async () => {
     if (!support.supported) return setTagError(support.reason);
-    if (!workerReady) return setTagError('タグ書き込みエンジンを準備中です。しばらく待って再実行してください。');
-    if (orderedTracks.length === 0) return setTagError('トラック情報がないため、タグ書き込みができません。');
+    if (!workerReady) return setTagError('\u30bf\u30b0\u66f8\u304d\u8fbc\u307f\u30a8\u30f3\u30b8\u30f3\u3092\u6e96\u5099\u4e2d\u3067\u3059\u3002\u3057\u3070\u3089\u304f\u5f85\u3063\u3066\u518d\u5b9f\u884c\u3057\u3066\u304f\u3060\u3055\u3044\u3002');
+    if (taggableTracks.length === 0) return setTagError('\u30bf\u30b0\u66f8\u304d\u8fbc\u307f\u5bfe\u8c61\u306eCD\u30c7\u30a3\u30b9\u30af\u304c\u3042\u308a\u307e\u305b\u3093\u3002');
     setTagError('');
     setTagMessage('');
     setTagProgress(0);
@@ -970,22 +1056,22 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
           relativePath: handle.name,
         }))
       );
-      if (rows.length === 0) return setTagError('対応形式のファイルが選択されていません。');
+      if (rows.length === 0) return setTagError('\u5bfe\u5fdc\u5f62\u5f0f\u306e\u30d5\u30a1\u30a4\u30eb\u304c\u9078\u629e\u3055\u308c\u3066\u3044\u307e\u305b\u3093\u3002');
       setTagFiles(rows);
     } catch (e) {
       if (e?.name !== 'AbortError') {
         console.error(e);
-        setTagError('ファイル選択に失敗しました。');
+        setTagError('\u30d5\u30a1\u30a4\u30eb\u9078\u629e\u306b\u5931\u6557\u3057\u307e\u3057\u305f\u3002');
       }
     }
   };
 
   const handleSelectFolder = async () => {
     if (!support.supported) return setTagError(support.reason);
-    if (!workerReady) return setTagError('タグ書き込みエンジンを準備中です。しばらく待って再実行してください。');
-    if (orderedTracks.length === 0) return setTagError('トラック情報がないため、タグ書き込みができません。');
+    if (!workerReady) return setTagError('\u30bf\u30b0\u66f8\u304d\u8fbc\u307f\u30a8\u30f3\u30b8\u30f3\u3092\u6e96\u5099\u4e2d\u3067\u3059\u3002\u3057\u3070\u3089\u304f\u5f85\u3063\u3066\u518d\u5b9f\u884c\u3057\u3066\u304f\u3060\u3055\u3044\u3002');
+    if (taggableTracks.length === 0) return setTagError('\u30bf\u30b0\u66f8\u304d\u8fbc\u307f\u5bfe\u8c61\u306eCD\u30c7\u30a3\u30b9\u30af\u304c\u3042\u308a\u307e\u305b\u3093\u3002');
     if (typeof window.showDirectoryPicker !== 'function') {
-      return setTagError('このブラウザではフォルダ選択に対応していません。');
+      return setTagError('\u3053\u306e\u30d6\u30e9\u30a6\u30b6\u3067\u306f\u30d5\u30a9\u30eb\u30c0\u9078\u629e\u306b\u5bfe\u5fdc\u3057\u3066\u3044\u307e\u305b\u3093\u3002');
     }
 
     setTagError('');
@@ -995,24 +1081,28 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
       const dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
       const picked = await collectAudioFilesFromDirectory(dirHandle);
       if (picked.length === 0) {
-        return setTagError('フォルダ内に対応形式の音声ファイルが見つかりませんでした。');
+        return setTagError('\u30d5\u30a9\u30eb\u30c0\u5185\u306b\u5bfe\u5fdc\u5f62\u5f0f\u306e\u97f3\u58f0\u30d5\u30a1\u30a4\u30eb\u304c\u898b\u3064\u304b\u308a\u307e\u305b\u3093\u3067\u3057\u305f\u3002');
       }
 
-      let preferredDisc = null;
-      if (availableDiscNumbers.length > 1) {
-        const defaultDisc = String(availableDiscNumbers[0]);
+      if (taggableDiscNumbers.length === 0) {
+        return setTagError('\u30bf\u30b0\u66f8\u304d\u8fbc\u307f\u5bfe\u8c61\u306eCD\u30c7\u30a3\u30b9\u30af\u304c\u3042\u308a\u307e\u305b\u3093\u3002');
+      }
+
+      let preferredDisc = taggableDiscNumbers.length === 1 ? taggableDiscNumbers[0] : null;
+      if (taggableDiscNumbers.length > 1) {
+        const defaultDisc = String(taggableDiscNumbers[0]);
         const answer = window.prompt(
-          `このアルバムは複数ディスクです。\nフォルダ内ファイルを割り当てるディスク番号を入力してください。\n選択可能: ${availableDiscNumbers.join(', ')}`,
+          `\u3053\u306e\u30a2\u30eb\u30d0\u30e0\u306f\u8907\u6570\u30c7\u30a3\u30b9\u30af\u3067\u3059\u3002\n\u30d5\u30a9\u30eb\u30c0\u5185\u30d5\u30a1\u30a4\u30eb\u3092\u5272\u308a\u5f53\u3066\u308b\u30c7\u30a3\u30b9\u30af\u756a\u53f7\u3092\u5165\u529b\u3057\u3066\u304f\u3060\u3055\u3044\u3002\n\u9078\u629e\u53ef\u80fd: ${taggableDiscNumbers.join(', ')}`,
           defaultDisc
         );
         if (answer === null) {
-          setTagMessage('ディスク番号の選択をキャンセルしました。');
+          setTagMessage('\u30c7\u30a3\u30b9\u30af\u756a\u53f7\u306e\u9078\u629e\u3092\u30ad\u30e3\u30f3\u30bb\u30eb\u3057\u307e\u3057\u305f\u3002');
           return;
         }
 
         const selectedDisc = Number(String(answer).trim());
-        if (!Number.isInteger(selectedDisc) || !availableDiscNumbers.includes(selectedDisc)) {
-          setTagError(`ディスク番号は ${availableDiscNumbers.join(', ')} のいずれかを入力してください。`);
+        if (!Number.isInteger(selectedDisc) || !taggableDiscNumbers.includes(selectedDisc)) {
+          setTagError(`\u30c7\u30a3\u30b9\u30af\u756a\u53f7\u306f ${taggableDiscNumbers.join(', ')} \u306e\u3044\u305a\u308c\u304b\u3092\u5165\u529b\u3057\u3066\u304f\u3060\u3055\u3044\u3002`);
           return;
         }
         preferredDisc = selectedDisc;
@@ -1020,16 +1110,16 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
 
       const rows = await buildTagRowsFromPickedFiles(picked, { preferredDisc });
       if (rows.length === 0) {
-        return setTagError('フォルダ内に対応形式の音声ファイルが見つかりませんでした。');
+        return setTagError('\u30d5\u30a9\u30eb\u30c0\u5185\u306b\u5bfe\u5fdc\u5f62\u5f0f\u306e\u97f3\u58f0\u30d5\u30a1\u30a4\u30eb\u304c\u898b\u3064\u304b\u308a\u307e\u305b\u3093\u3067\u3057\u305f\u3002');
       }
       setTagFiles(rows);
       setTagMessage(
-        `${rows.length}件のファイルを読み込みました。${preferredDisc ? `（Disc ${preferredDisc} で自動割り当て）` : ''}`
+        `${rows.length}\u4ef6\u306e\u30d5\u30a1\u30a4\u30eb\u3092\u8aad\u307f\u8fbc\u307f\u307e\u3057\u305f\u3002${preferredDisc ? `\uff08Disc ${preferredDisc} \u3067\u81ea\u52d5\u5272\u308a\u5f53\u3066\uff09` : ''}`
       );
     } catch (e) {
       if (e?.name !== 'AbortError') {
         console.error(e);
-        setTagError('フォルダ選択に失敗しました。');
+        setTagError('\u30d5\u30a9\u30eb\u30c0\u9078\u629e\u306b\u5931\u6557\u3057\u307e\u3057\u305f\u3002');
       }
     }
   };
@@ -1079,6 +1169,7 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
     if (isWriting) return;
     if (!workerReady) return setTagError('タグ書き込みエンジンを準備中です。しばらく待って再実行してください。');
     if (tagFiles.length === 0) return setTagError('先にファイルを選択してください。');
+    if (taggableTracks.length === 0) return setTagError('\u30bf\u30b0\u66f8\u304d\u8fbc\u307f\u5bfe\u8c61\u306eCD\u30c7\u30a3\u30b9\u30af\u304c\u3042\u308a\u307e\u305b\u3093\u3002');
     const targets = tagFiles.filter((f) => f.trackId);
     if (targets.length === 0) return setTagError('少なくとも1件はトラックを割り当ててください。');
 
@@ -1086,7 +1177,7 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
     setTagMessage('書き込みを開始します...');
     setTagProgress(0);
     setIsWriting(true);
-    const outputAlbumFolderName = sanitizeFileName(copyValue(album?.title)) || `album-${id}`;
+    const baseOutputAlbumFolderName = sanitizeFileName(copyValue(album?.title)) || `album-${id}`;
     const albumTitleForWrite = albumTitleForTags || copyValue(album?.title);
 
     const singleFileSavePlans = new Map();
@@ -1101,7 +1192,7 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
 
         const reservedNames = new Set();
         for (const row of singleFileRows) {
-          const track = orderedTracks.find((t) => String(t.id) === String(row.trackId));
+          const track = taggableTrackMap.get(String(row.trackId));
           if (!track) continue;
 
           const context = buildRenameContext(album, track, releaseYear, albumTitleForWrite);
@@ -1174,7 +1265,7 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
         updateTagFile(row.key, { status: 'skipped', message: 'トラック未割り当てのためスキップ' });
         continue;
       }
-      const track = orderedTracks.find((t) => String(t.id) === String(row.trackId));
+      const track = taggableTrackMap.get(String(row.trackId));
       if (!track) {
         updateTagFile(row.key, { status: 'error', message: '割り当てトラックが見つかりません' });
         done += 1;
@@ -1216,6 +1307,11 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
           }
 
           let desiredOutputName = row.name;
+          const outputAlbumFolderName = buildOutputAlbumFolderName(
+            baseOutputAlbumFolderName,
+            Number(track?.disk_number ?? 0),
+            includeDiscNumberInFolderName
+          );
           if (renameOnWrite) {
             const context = buildRenameContext(album, track, releaseYear, albumTitleForWrite);
             const rendered = renderRenameTemplate(renamePattern, context);
@@ -1690,6 +1786,18 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
                   タグ書き込み時にファイル名をリネームする
                 </label>
 
+                {shouldShowDiscFolderNameOption && (
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={includeDiscNumberInFolderName}
+                      onChange={(e) => setIncludeDiscNumberInFolderName(e.target.checked)}
+                      disabled={isWriting}
+                    />
+                    フォルダ名にディスク番号を含める
+                  </label>
+                )}
+
                 {shouldShowEditionInAlbumNameOption && (
                   <label className="flex items-center gap-2 text-sm">
                     <input
@@ -1723,6 +1831,11 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
                 <div className="text-xs text-amber-700 dark:text-amber-300">
                   フォルダ選択時は、各楽曲と同じ階層に「アルバム名」フォルダを作成し、その中へタグ書き込み済みファイルを出力します（元ファイルは保持）。
                 </div>
+                {shouldShowDiscFolderNameOption && (
+                  <div className="text-xs text-amber-700 dark:text-amber-300">
+                    このオプションをONにすると、フォルダ名は「アルバム名 [Disc3]」の形式になります。
+                  </div>
+                )}
               </div>
 
               <div className="mt-3 rounded border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-700 dark:bg-red-900/20 dark:text-red-200">
@@ -1775,7 +1888,7 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
                             className="w-full px-2 py-1 border rounded bg-white dark:bg-gray-900 dark:border-gray-600"
                           >
                             <option value="">未割り当て</option>
-                            {orderedTracks.map((t) => (
+                            {taggableTracks.map((t) => (
                               <option key={t.id} value={String(t.id)}>
                                 Disc {t.disk_number ?? 1} / Tr {t.track_number ?? '-'}: {t.title}
                               </option>

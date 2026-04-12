@@ -25,7 +25,7 @@ const sections = [
   {
     title: '外部情報ソースと API について',
     body: [
-      'このサイトでは、公式サイト、MusicBrainz、Rakuten Books API、Apple Music API などの外部情報を参照しています。',
+      'このサイトでは、公式サイト、MusicBrainz、Rakuten Books API、などの外部情報を参照しています。',
       '表示内容は参照元の更新、公開状況、API の応答などによって変わることがあります。',
       '参照元と完全に一致することを保証するものではありません。最終的な判断は公式情報や販売元情報もあわせてご確認ください。',
     ],

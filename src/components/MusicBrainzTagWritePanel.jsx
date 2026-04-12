@@ -16,6 +16,7 @@ const MSG_CHROMIUM_ONLY = '\u30bf\u30b0\u66f8\u304d\u8fbc\u307f\u306f\u0020\u004
 const MSG_NO_FS = '\u3053\u306e\u30d6\u30e9\u30a6\u30b6\u3067\u306f\u30ed\u30fc\u30ab\u30eb\u30d5\u30a1\u30a4\u30eb\u3078\u306e\u76f4\u63a5\u66f8\u304d\u8fbc\u307f\u306b\u5bfe\u5fdc\u3057\u3066\u3044\u307e\u305b\u3093\u3002\u0050\u0043\u7248\u0043\u0068\u0072\u006f\u006d\u0065\u307e\u305f\u306f\u0045\u0064\u0067\u0065\u3092\u3054\u5229\u7528\u304f\u3060\u3055\u3044\u3002';
 const MSG_WORKER_PREPARING = '\u30bf\u30b0\u66f8\u304d\u8fbc\u307f\u30a8\u30f3\u30b8\u30f3\u3092\u6e96\u5099\u4e2d\u3067\u3059\u3002\u3057\u3070\u3089\u304f\u5f85\u3063\u3066\u518d\u5b9f\u884c\u3057\u3066\u304f\u3060\u3055\u3044\u3002';
 const MSG_NO_TRACKS = '\u30c8\u30e9\u30c3\u30af\u60c5\u5831\u304c\u306a\u3044\u305f\u3081\u3001\u30bf\u30b0\u66f8\u304d\u8fbc\u307f\u304c\u3067\u304d\u307e\u305b\u3093\u3002';
+const MSG_NO_CD_TRACKS = '\u30bf\u30b0\u66f8\u304d\u8fbc\u307f\u5bfe\u8c61\u306e\u0043\u0044\u30c7\u30a3\u30b9\u30af\u304c\u3042\u308a\u307e\u305b\u3093\u3002';
 const MSG_NO_FILES = '\u5148\u306b\u30d5\u30a1\u30a4\u30eb\u3092\u9078\u629e\u3057\u3066\u304f\u3060\u3055\u3044\u3002';
 const MSG_NEED_ASSIGN = '\u5c11\u306a\u304f\u3068\u30821\u4ef6\u306f\u30c8\u30e9\u30c3\u30af\u3092\u5272\u308a\u5f53\u3066\u3066\u304f\u3060\u3055\u3044\u3002';
 const MSG_SELECT_FAILED = '\u30d5\u30a1\u30a4\u30eb\u9078\u629e\u306b\u5931\u6557\u3057\u307e\u3057\u305f\u3002';
@@ -96,6 +97,63 @@ function normalizeTracks(items) {
   });
 }
 
+
+function normalizeDiscType(value) {
+  switch (String(value ?? '').trim().toLowerCase()) {
+    case 'dvd':
+      return 'dvd';
+    case 'bd':
+    case 'blu-ray':
+    case 'bluray':
+    case 'blu_ray':
+      return 'bd';
+    case 'other':
+      return 'other';
+    default:
+      return 'cd';
+  }
+}
+
+function inferDiscTypeFromTracks(tracks) {
+  const combined = (Array.isArray(tracks) ? tracks : [])
+    .flatMap((track) => [String(track?.title ?? '').trim(), String(track?.comment ?? '').trim()])
+    .filter(Boolean)
+    .join('\n');
+
+  if (combined === '') return 'cd';
+  if (/(?:blu[\s-]*ray|blu[\s-]*ray\s*disc|\bBD\b)/iu.test(combined)) return 'bd';
+  if (/(?:\bDVD\b|music\s*video|\bMV\b|making)/iu.test(combined)) return 'dvd';
+  return 'cd';
+}
+
+function buildDiscTypeMap(discs, tracks) {
+  const map = new Map();
+
+  if (Array.isArray(discs)) {
+    discs.forEach((disc) => {
+      const discNumber = Number(disc?.disc_number ?? disc?.disk_number ?? 0);
+      if (!Number.isInteger(discNumber) || discNumber <= 0) return;
+      map.set(discNumber, normalizeDiscType(disc?.disc_type));
+    });
+  }
+
+  const grouped = new Map();
+  for (const track of Array.isArray(tracks) ? tracks : []) {
+    const discNumber = Number(track?.disk_number ?? 1);
+    if (!Number.isInteger(discNumber) || discNumber <= 0) continue;
+    if (!grouped.has(discNumber)) grouped.set(discNumber, []);
+    grouped.get(discNumber).push(track);
+  }
+
+  grouped.forEach((discTracks, discNumber) => {
+    if (!map.has(discNumber)) {
+      map.set(discNumber, inferDiscTypeFromTracks(discTracks));
+    }
+  });
+
+  return map;
+}
+
 function releaseYearText(album) {
   const matched = String(album?.release_date ?? '').match(/^(\d{4})/);
   return matched ? matched[1] : '';
@@ -154,6 +212,16 @@ function sanitizeFileName(name) {
     return char;
   }).join('');
   return filtered.replace(/[. ]+$/g, '').trim();
+}
+
+function buildOutputAlbumFolderName(baseName, discNumber, includeDiscNumber) {
+  const fallbackBaseName = sanitizeFileName(baseName) || 'album';
+  const resolvedDiscNumber = Number(discNumber);
+  if (!includeDiscNumber || !Number.isInteger(resolvedDiscNumber) || resolvedDiscNumber <= 0) {
+    return fallbackBaseName;
+  }
+
+  return sanitizeFileName(`${fallbackBaseName} [Disc${resolvedDiscNumber}]`) || fallbackBaseName;
 }
 
 function creditsText(value) {
@@ -255,6 +323,7 @@ export default function MusicBrainzTagWritePanel({ album }) {
   const [isWriting, setIsWriting] = useState(false);
   const [embedCover, setEmbedCover] = useState(false);
   const [renameOnWrite, setRenameOnWrite] = useState(true);
+  const [includeDiscNumberInFolderName, setIncludeDiscNumberInFolderName] = useState(false);
   const [renamePattern, setRenamePattern] = useState('$num(%track%,2) %title%');
   const [isTagOptionExpanded, setIsTagOptionExpanded] = useState(false);
 
@@ -269,8 +338,23 @@ export default function MusicBrainzTagWritePanel({ album }) {
     return map;
   }, [orderedTracks]);
   const discTotal = useMemo(() => Math.max(1, new Set(orderedTracks.map((track) => Number(track?.disk_number ?? 1))).size), [orderedTracks]);
-  const availableDiscNumbers = useMemo(() => Array.from(new Set(orderedTracks.map((track) => Number(track?.disk_number ?? 1)).filter((disc) => Number.isInteger(disc) && disc > 0))).sort((a, b) => a - b), [orderedTracks]);
-  const shouldShowTagOptionDetails = tagFiles.length > 0 || isTagOptionExpanded;  const workerWasmUrl = useMemo(() => {
+  const discTypeMap = useMemo(() => buildDiscTypeMap(album?.discs, orderedTracks), [album?.discs, orderedTracks]);
+  const taggableTracks = useMemo(
+    () => orderedTracks.filter((track) => normalizeDiscType(discTypeMap.get(Number(track?.disk_number ?? 1))) === 'cd'),
+    [discTypeMap, orderedTracks]
+  );
+  const taggableDiscNumbers = useMemo(
+    () => Array.from(new Set(taggableTracks.map((track) => Number(track?.disk_number ?? 1)).filter((disc) => Number.isInteger(disc) && disc > 0))).sort((a, b) => a - b),
+    [taggableTracks]
+  );
+  const taggableTrackMap = useMemo(() => new Map(taggableTracks.map((track) => [String(track.__tagId), track])), [taggableTracks]);
+  const shouldShowDiscFolderNameOption = taggableDiscNumbers.length > 1;
+  const shouldShowTagOptionDetails = tagFiles.length > 0 || isTagOptionExpanded;
+  useEffect(() => {
+    setIncludeDiscNumberInFolderName(shouldShowDiscFolderNameOption);
+  }, [album?.id, shouldShowDiscFolderNameOption]);
+
+  const workerWasmUrl = useMemo(() => {
     if (typeof window === 'undefined') return '/taglib.wasm';
     const basePath = String(import.meta.env.BASE_URL || '/').replace(/\/+$/, '/');
     return new URL(`${basePath}taglib.wasm`, window.location.origin).toString();
@@ -346,8 +430,8 @@ export default function MusicBrainzTagWritePanel({ album }) {
   const buildTagRowsFromPickedFiles = useCallback(async (pickedItems, options = {}) => {
     const preferredDisc = Number(options?.preferredDisc ?? 0);
     const hasPreferredDisc = Number.isInteger(preferredDisc) && preferredDisc > 0;
-    const candidateTracks = hasPreferredDisc ? orderedTracks.filter((track) => Number(track?.disk_number ?? 1) === preferredDisc) : orderedTracks;
-    const sourceTracks = candidateTracks.length > 0 ? candidateTracks : orderedTracks;
+    const candidateTracks = hasPreferredDisc ? taggableTracks.filter((track) => Number(track?.disk_number ?? 1) === preferredDisc) : taggableTracks;
+    const sourceTracks = candidateTracks.length > 0 ? candidateTracks : taggableTracks;
     const files = await Promise.all(pickedItems.map((item) => item.handle.getFile()));
     const rows = [];
     const usedTrackIds = new Set();
@@ -376,12 +460,12 @@ export default function MusicBrainzTagWritePanel({ album }) {
       rows.push({ key: `${picked.relativePath || file.name}-${file.size}-${Date.now()}-${index}`, handle: picked.handle, directoryHandle: picked.directoryHandle ?? null, name: file.name, size: file.size, trackId, status: 'pending', message: trackId ? LABEL_PENDING : LABEL_NOT_ASSIGNED });
     }
     return rows;
-  }, [orderedTracks]);
+  }, [taggableTracks]);
 
   const handleSelectFiles = async () => {
     if (!support.supported) return setTagError(support.reason);
     if (!workerReady) return setTagError(MSG_WORKER_PREPARING);
-    if (orderedTracks.length === 0) return setTagError(MSG_NO_TRACKS);
+    if (taggableTracks.length === 0) return setTagError(MSG_NO_CD_TRACKS);
     setTagError(''); setTagMessage(''); setTagProgress(0);
     try {
       const handles = await window.showOpenFilePicker({ multiple: true, excludeAcceptAllOption: true, types: [{ description: 'Audio files', accept: { 'audio/mpeg': ['.mp3'], 'audio/flac': ['.flac'], 'audio/mp4': ['.m4a'] } }] });
@@ -394,20 +478,23 @@ export default function MusicBrainzTagWritePanel({ album }) {
   const handleSelectFolder = async () => {
     if (!support.supported) return setTagError(support.reason);
     if (!workerReady) return setTagError(MSG_WORKER_PREPARING);
-    if (orderedTracks.length === 0) return setTagError(MSG_NO_TRACKS);
+    if (taggableTracks.length === 0) return setTagError(MSG_NO_CD_TRACKS);
     if (typeof window.showDirectoryPicker !== 'function') return setTagError(MSG_DIRECTORY_UNSUPPORTED);
     setTagError(''); setTagMessage(''); setTagProgress(0);
     try {
       const dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
       const picked = await collectAudioFilesFromDirectory(dirHandle);
       if (picked.length === 0) return setTagError(MSG_FOLDER_EMPTY);
-      let preferredDisc = null;
-      if (availableDiscNumbers.length > 1) {
-        const answer = window.prompt(`\u3053\u306e\u30a2\u30eb\u30d0\u30e0\u306f\u8907\u6570\u30c7\u30a3\u30b9\u30af\u3067\u3059\u3002\n\u30d5\u30a9\u30eb\u30c0\u5185\u30d5\u30a1\u30a4\u30eb\u3092\u5272\u308a\u5f53\u3066\u308b\u30c7\u30a3\u30b9\u30af\u756a\u53f7\u3092\u5165\u529b\u3057\u3066\u304f\u3060\u3055\u3044\u3002\n\u9078\u629e\u53ef\u80fd: ${availableDiscNumbers.join(', ')}`, String(availableDiscNumbers[0]));
+      if (taggableDiscNumbers.length === 0) return setTagError(MSG_NO_CD_TRACKS);
+      let preferredDisc = taggableDiscNumbers.length === 1 ? taggableDiscNumbers[0] : null;
+      if (taggableDiscNumbers.length > 1) {
+        const answer = window.prompt(`このアルバムは複数ディスクです。
+フォルダ内ファイルを割り当てるディスク番号を入力してください。
+選択可能: ${taggableDiscNumbers.join(', ')}`, String(taggableDiscNumbers[0]));
         if (answer === null) { setTagMessage(MSG_DISC_CANCELLED); return; }
         const selectedDisc = Number(String(answer).trim());
-        if (!Number.isInteger(selectedDisc) || !availableDiscNumbers.includes(selectedDisc)) {
-          setTagError(`\u30c7\u30a3\u30b9\u30af\u756a\u53f7\u306f ${availableDiscNumbers.join(', ')} \u306e\u3044\u305a\u308c\u304b\u3092\u5165\u529b\u3057\u3066\u304f\u3060\u3055\u3044\u3002`);
+        if (!Number.isInteger(selectedDisc) || !taggableDiscNumbers.includes(selectedDisc)) {
+          setTagError(`ディスク番号は ${taggableDiscNumbers.join(', ')} のいずれかを入力してください。`);
           return;
         }
         preferredDisc = selectedDisc;
@@ -416,7 +503,9 @@ export default function MusicBrainzTagWritePanel({ album }) {
       if (rows.length === 0) return setTagError(MSG_FOLDER_EMPTY);
       setTagFiles(rows);
     } catch (caughtError) { if (caughtError?.name !== 'AbortError') { console.error(caughtError); setTagError(MSG_FOLDER_FAILED); } }
-  };  const loadCoverArtwork = async () => {
+  };
+
+  const loadCoverArtwork = async () => {
     const coverUrl = String(album?.cover_image_url ?? '').trim();
     if (!embedCover || coverUrl === '') return null;
     const response = await fetch(coverUrl, { cache: 'no-store' });
@@ -430,11 +519,12 @@ export default function MusicBrainzTagWritePanel({ album }) {
     if (isWriting) return;
     if (!workerReady) return setTagError(MSG_WORKER_PREPARING);
     if (tagFiles.length === 0) return setTagError(MSG_NO_FILES);
+    if (taggableTracks.length === 0) return setTagError(MSG_NO_CD_TRACKS);
     const targets = tagFiles.filter((file) => file.trackId);
     if (targets.length === 0) return setTagError(MSG_NEED_ASSIGN);
 
     setTagError(''); setTagMessage(MSG_START_WRITE); setTagProgress(0); setIsWriting(true);
-    const outputAlbumFolderName = sanitizeFileName(showValue(album?.title)) || 'album';
+    const baseOutputAlbumFolderName = sanitizeFileName(showValue(album?.title)) || 'album';
     const singleFileSavePlans = new Map();
 
     if (renameOnWrite) {
@@ -448,7 +538,7 @@ export default function MusicBrainzTagWritePanel({ album }) {
 
         const reservedNames = new Set();
         for (const row of singleFileRows) {
-          const track = orderedTracks.find((item) => String(item.__tagId) === String(row.trackId));
+          const track = taggableTrackMap.get(String(row.trackId));
           if (!track) continue;
           const context = buildRenameContext(album, track, releaseYear);
           const rendered = renderRenameTemplate(renamePattern, context);
@@ -494,7 +584,7 @@ export default function MusicBrainzTagWritePanel({ album }) {
         updateTagFile(row.key, { status: 'skipped', message: LABEL_SKIPPED });
         continue;
       }
-      const track = orderedTracks.find((item) => String(item.__tagId) === String(row.trackId));
+      const track = taggableTrackMap.get(String(row.trackId));
       if (!track) {
         updateTagFile(row.key, { status: 'error', message: LABEL_NOT_FOUND });
         done += 1; setTagProgress(Math.round((done / targets.length) * 100));
@@ -516,6 +606,11 @@ export default function MusicBrainzTagWritePanel({ album }) {
           const dirPermission = await row.directoryHandle.requestPermission?.({ mode: 'readwrite' });
           if (dirPermission && dirPermission !== 'granted') throw new Error('\u4fdd\u5b58\u5148\u30d5\u30a9\u30eb\u30c0\u306e\u66f8\u304d\u8fbc\u307f\u6a29\u9650\u304c\u8a31\u53ef\u3055\u308c\u307e\u305b\u3093\u3067\u3057\u305f\u3002');
           let desiredOutputName = row.name;
+          const outputAlbumFolderName = buildOutputAlbumFolderName(
+            baseOutputAlbumFolderName,
+            Number(track?.disk_number ?? 0),
+            includeDiscNumberInFolderName
+          );
           if (renameOnWrite) {
             const context = buildRenameContext(album, track, releaseYear);
             const rendered = renderRenameTemplate(renamePattern, context);
@@ -581,10 +676,12 @@ export default function MusicBrainzTagWritePanel({ album }) {
           <div className="mt-3 flex flex-col items-start gap-2">
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={embedCover} onChange={(event) => setEmbedCover(event.target.checked)} disabled={!album?.cover_image_url || isWriting} />{LABEL_EMBED_COVER}</label>
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={renameOnWrite} onChange={(event) => setRenameOnWrite(event.target.checked)} disabled={isWriting} />{LABEL_RENAME}</label>
+            {shouldShowDiscFolderNameOption ? <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={includeDiscNumberInFolderName} onChange={(event) => setIncludeDiscNumberInFolderName(event.target.checked)} disabled={isWriting} />フォルダ名にディスク番号を含める</label> : null}
             <input type="text" value={renamePattern} onChange={(event) => setRenamePattern(event.target.value)} disabled={!renameOnWrite || isWriting} className="w-full max-w-xl rounded border border-gray-300 bg-white px-3 py-2 dark:border-gray-600 dark:bg-gray-900 disabled:opacity-60" placeholder="$num(%track%,2) %title%" />
             <div className="text-xs text-gray-600 dark:text-gray-300">{PANEL_RENAME_HELP}</div>
             {renameOnWrite ? <div className="text-xs text-amber-700 dark:text-amber-300">{PANEL_SINGLE_HELP}</div> : null}
             <div className="text-xs text-amber-700 dark:text-amber-300">{PANEL_FOLDER_HELP}</div>
+            {shouldShowDiscFolderNameOption ? <div className="text-xs text-amber-700 dark:text-amber-300">このオプションをONにすると、フォルダ名は「アルバム名 [Disc3]」の形式になります。</div> : null}
           </div>
           <div className="mt-3 rounded border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-700 dark:bg-red-900/20 dark:text-red-200">{PANEL_DANGER}</div>
         </>
@@ -598,7 +695,7 @@ export default function MusicBrainzTagWritePanel({ album }) {
 
       {support.supported && tagFiles.length > 0 ? (
         <div className="mt-4">
-          <div className={tableCardClass}><div className="overflow-x-auto"><table className={`${tableClass} min-w-[920px]`}><thead><tr className={tableHeadRowClass}><th className={`${tableHeadCellClass} min-w-[260px]`}>{LABEL_FILE}</th><th className={`${tableHeadCellClass} min-w-[280px]`}>{LABEL_ASSIGN}</th><th className={`${tableHeadCellClass} min-w-[220px]`}>{LABEL_STATUS}</th></tr></thead><tbody>{tagFiles.map((file) => (<tr key={file.key} className={tableRowClass}><td className={tableCellClass}><div className="font-medium">{file.name}</div><div className="text-xs text-slate-500 dark:text-slate-400">{formatFileSize(file.size)}</div></td><td className={tableCellClass}><select value={file.trackId} disabled={isWriting} onChange={(event) => updateTagFile(file.key, { trackId: event.target.value, status: 'pending', message: event.target.value ? LABEL_PENDING : LABEL_NOT_ASSIGNED })} className="w-full rounded border border-gray-300 bg-white px-2 py-1 dark:border-gray-600 dark:bg-gray-900"><option value="">{LABEL_UNASSIGNED}</option>{orderedTracks.map((track) => (<option key={track.__tagId} value={String(track.__tagId)}>{`Disc ${track.disk_number ?? 1} / Tr ${track.track_number ?? '-'}: ${track.title ?? ''}`}</option>))}</select></td><td className={tableCellClass}><div className="font-semibold">{file.status}</div><div className="text-slate-700 dark:text-slate-300">{file.message}</div></td></tr>))}</tbody></table></div></div>
+          <div className={tableCardClass}><div className="overflow-x-auto"><table className={`${tableClass} min-w-[920px]`}><thead><tr className={tableHeadRowClass}><th className={`${tableHeadCellClass} min-w-[260px]`}>{LABEL_FILE}</th><th className={`${tableHeadCellClass} min-w-[280px]`}>{LABEL_ASSIGN}</th><th className={`${tableHeadCellClass} min-w-[220px]`}>{LABEL_STATUS}</th></tr></thead><tbody>{tagFiles.map((file) => (<tr key={file.key} className={tableRowClass}><td className={tableCellClass}><div className="font-medium">{file.name}</div><div className="text-xs text-slate-500 dark:text-slate-400">{formatFileSize(file.size)}</div></td><td className={tableCellClass}><select value={file.trackId} disabled={isWriting} onChange={(event) => updateTagFile(file.key, { trackId: event.target.value, status: 'pending', message: event.target.value ? LABEL_PENDING : LABEL_NOT_ASSIGNED })} className="w-full rounded border border-gray-300 bg-white px-2 py-1 dark:border-gray-600 dark:bg-gray-900"><option value="">{LABEL_UNASSIGNED}</option>{taggableTracks.map((track) => (<option key={track.__tagId} value={String(track.__tagId)}>{`Disc ${track.disk_number ?? 1} / Tr ${track.track_number ?? '-'}: ${track.title ?? ''}`}</option>))}</select></td><td className={tableCellClass}><div className="font-semibold">{file.status}</div><div className="text-slate-700 dark:text-slate-300">{file.message}</div></td></tr>))}</tbody></table></div></div>
           <div className="mt-3 flex justify-end"><button type="button" onClick={handleWriteTags} disabled={!support.supported || !workerReady || isWriting || tagFiles.length === 0} className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-3 py-2 text-white transition hover:bg-emerald-700 disabled:opacity-60">{isWriting ? <Loader2 className="h-4 w-4 animate-spin" /> : <WandSparkles className="h-4 w-4" />}{LABEL_WRITE}</button></div>
         </div>
       ) : null}

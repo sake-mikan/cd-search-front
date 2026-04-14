@@ -535,7 +535,7 @@ export default function HomePage({ isDarkMode = false, onToggleTheme = () => {} 
           {sortIcon('catalog_number')}
         </button>
       ),
-      className: 'w-40 whitespace-nowrap font-mono',
+      className: 'w-40 whitespace-nowrap tabular-nums',
     },
     {
       key: 'releaseDate',
@@ -720,7 +720,7 @@ export default function HomePage({ isDarkMode = false, onToggleTheme = () => {} 
                         </div>
                       </td>
                       <td className="border-b border-r border-slate-200 px-4 py-3 text-slate-700 dark:border-slate-600 dark:text-slate-200">{album.album_artist?.name ?? '-'}</td>
-                      <td className="border-b border-r border-slate-200 px-4 py-3 font-mono text-sm dark:border-slate-600">{album.catalog_number_display || album.catalog_number || '-'}</td>
+                      <td className="border-b border-r border-slate-200 px-4 py-3 tabular-nums text-sm dark:border-slate-600">{album.catalog_number_display || album.catalog_number || '-'}</td>
                       <td className="border-b px-4 py-3 whitespace-nowrap text-slate-600 dark:border-slate-600 dark:text-slate-300">{formatDateDisplay(album.release_date) || '-'}</td>
                     </tr>
                   )}
@@ -737,7 +737,7 @@ export default function HomePage({ isDarkMode = false, onToggleTheme = () => {} 
                           </div>
                           <p className="line-clamp-2 text-sm text-slate-600 dark:text-slate-300">{album.album_artist?.name ?? '-'}</p>
                           <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
-                            <span className="rounded-full bg-slate-100 px-2.5 py-1 font-mono dark:bg-slate-700">{album.catalog_number_display || album.catalog_number || '-'}</span>
+                            <span className="rounded-full bg-slate-100 px-2.5 py-1 tabular-nums dark:bg-slate-700">{album.catalog_number_display || album.catalog_number || '-'}</span>
                             <span>{formatDateDisplay(album.release_date) || '-'}</span>
                           </div>
                         </div>
@@ -775,7 +775,7 @@ export default function HomePage({ isDarkMode = false, onToggleTheme = () => {} 
                     </td>
                     <td className="border-b border-r border-slate-200 px-4 py-3 font-medium dark:border-slate-600"><Link to={`/albums/musicbrainz/${album.musicbrainz_id}`} className="text-blue-600 underline-offset-4 hover:text-blue-800 hover:underline dark:text-sky-400 dark:hover:text-sky-300">{album.title}</Link></td>
                     <td className="border-b border-r border-slate-200 px-4 py-3 text-slate-700 dark:border-slate-600 dark:text-slate-200">{album.album_artist || '-'}</td>
-                    <td className="border-b border-r border-slate-200 px-4 py-3 font-mono text-sm dark:border-slate-600">{album.catalog_number_display || album.catalog_number || '-'}</td>
+                    <td className="border-b border-r border-slate-200 px-4 py-3 tabular-nums text-sm dark:border-slate-600">{album.catalog_number_display || album.catalog_number || '-'}</td>
                     <td className="border-b px-4 py-3 whitespace-nowrap text-slate-600 dark:border-slate-600 dark:text-slate-300">{formatDateDisplay(album.release_date) || '-'}</td>
                   </tr>
                 )}
@@ -789,7 +789,7 @@ export default function HomePage({ isDarkMode = false, onToggleTheme = () => {} 
                         <h3 className="line-clamp-3 text-base font-semibold leading-6 text-slate-900 dark:text-slate-100">{album.title}</h3>
                         <p className="line-clamp-2 text-sm text-slate-600 dark:text-slate-300">{album.album_artist || '-'}</p>
                         <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
-                          <span className="rounded-full bg-slate-100 px-2.5 py-1 font-mono dark:bg-slate-700">{album.catalog_number_display || album.catalog_number || '-'}</span>
+                          <span className="rounded-full bg-slate-100 px-2.5 py-1 tabular-nums dark:bg-slate-700">{album.catalog_number_display || album.catalog_number || '-'}</span>
                           <span>{formatDateDisplay(album.release_date) || '-'}</span>
                         </div>
                       </div>

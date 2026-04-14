@@ -119,6 +119,19 @@ function buildDiscTypeMap(discs, tracks) {
   return map;
 }
 
+function formatDiscTypeName(value) {
+  switch (normalizeDiscType(value)) {
+    case 'dvd':
+      return 'DVD';
+    case 'bd':
+      return 'Blu-ray';
+    case 'other':
+      return 'Other';
+    default:
+      return '';
+  }
+}
+
 function isNamedPersonObject(value) {
   return Boolean(
     value &&
@@ -1434,15 +1447,19 @@ export default function AlbumDetail({ isDarkMode = false, onToggleTheme = () => 
   );
   const trackListGroups = useMemo(
     () =>
-      discGroups.map(([discNumber, tracks]) => ({
-        discNumber,
-        discLabel: `Disc ${discNumber}`,
-        tracks: tracks.map((track, index) => ({
-          ...track,
-          __rowKey: `${discNumber}-${track.id ?? index}-${track.track_number ?? "x"}`,
-        })),
-      })),
-    [discGroups]
+      discGroups.map(([discNumber, tracks]) => {
+        const discType = discTypeMap.get(discNumber);
+        const discTypeName = formatDiscTypeName(discType);
+        return {
+          discNumber,
+          discLabel: `Disc ${discNumber}${discTypeName ? ` [${discTypeName}]` : ''}`,
+          tracks: tracks.map((track, index) => ({
+            ...track,
+            __rowKey: `${discNumber}-${track.id ?? index}-${track.track_number ?? "x"}`,
+          })),
+        };
+      }),
+    [discGroups, discTypeMap]
   );
 
   return (

@@ -158,7 +158,7 @@ export default function ArtistTracks({ isDarkMode = false, onToggleTheme = () =>
           {sortIcon('catalog_number')}
         </button>
       ),
-      className: 'w-40 whitespace-nowrap font-mono',
+      className: 'w-40 whitespace-nowrap tabular-nums',
     },
     {
       key: 'releaseDate',
@@ -238,7 +238,7 @@ export default function ArtistTracks({ isDarkMode = false, onToggleTheme = () =>
                     <td className="border-b border-r border-slate-200 px-4 py-3 dark:border-slate-600">
                       {track.album?.id ? <Link to={getAlbumRoutePath(track.album)} className="text-blue-600 underline-offset-4 hover:text-blue-800 hover:underline dark:text-sky-400 dark:hover:text-sky-300">{formatAlbumTitle(track.album)}</Link> : '-'}</td>
                     <td className="border-b border-r border-slate-200 px-4 py-3 whitespace-nowrap dark:border-slate-600">{formatTrackDisc(track)}</td>
-                    <td className="border-b border-r border-slate-200 px-4 py-3 font-mono text-sm dark:border-slate-600">{track.album?.catalog_number_display || track.album?.catalog_number || '-'}</td>
+                    <td className="border-b border-r border-slate-200 px-4 py-3 tabular-nums text-sm dark:border-slate-600">{track.album?.catalog_number_display || track.album?.catalog_number || '-'}</td>
                     <td className="border-b px-4 py-3 whitespace-nowrap text-slate-600 dark:border-slate-600 dark:text-slate-300">{formatDateDisplay(track.album?.release_date) || '-'}</td>
                   </tr>
                 )}
@@ -249,7 +249,7 @@ export default function ArtistTracks({ isDarkMode = false, onToggleTheme = () =>
                       <p className="line-clamp-2 text-sm text-slate-600 dark:text-slate-300">{track.album?.id ? formatAlbumTitle(track.album) : '-'}</p>
                       <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
                         <span className="rounded-full bg-slate-100 px-2.5 py-1 dark:bg-slate-700">{formatTrackDisc(track)}</span>
-                        <span className="rounded-full bg-slate-100 px-2.5 py-1 font-mono dark:bg-slate-700">{track.album?.catalog_number_display || track.album?.catalog_number || '-'}</span>
+                        <span className="rounded-full bg-slate-100 px-2.5 py-1 tabular-nums dark:bg-slate-700">{track.album?.catalog_number_display || track.album?.catalog_number || '-'}</span>
                         <span>{formatDateDisplay(track.album?.release_date) || '-'}</span>
                       </div>
                     </div>

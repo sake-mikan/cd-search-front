@@ -9,6 +9,7 @@ import SiteBrandHeader from '../components/SiteBrandHeader';
 import SiteFooter from '../components/SiteFooter';
 import { getAlbumRoutePath } from '../utils/albumPublicId';
 import { formatDateDisplay } from '../utils/formatDateDisplay';
+import { formatReleaseTypeLabelJa } from '../utils/releaseTypeLabel';
 import { PageBackdrop, pageCardClass, pageShellClass, secondaryButtonClass, floatingThemeButtonClass, mobileThemeButtonClass, primaryButtonClass } from '../utils/uiTheme';
 
 function formatAlbumTitle(album) {
@@ -119,18 +120,9 @@ export default function ArtistAlbums({ isDarkMode = false, onToggleTheme = () =>
     {
       key: 'title',
       header: (
-        <button type="button" className={sortableHeaderButtonClass} onClick={() => handleSort('title')} aria-label="アルバムでソート">
-          アルバム
+        <button type="button" className={sortableHeaderButtonClass} onClick={() => handleSort('title')} aria-label="タイトルでソート">
+          タイトル
           {sortIcon('title')}
-        </button>
-      ),
-    },
-    {
-      key: 'artist',
-      header: (
-        <button type="button" className={sortableHeaderButtonClass} onClick={() => handleSort('artist')} aria-label="アルバムアーティストでソート">
-          アルバムアーティスト
-          {sortIcon('artist')}
         </button>
       ),
     },
@@ -142,7 +134,7 @@ export default function ArtistAlbums({ isDarkMode = false, onToggleTheme = () =>
           {sortIcon('catalog_number')}
         </button>
       ),
-      className: 'w-40 whitespace-nowrap font-mono',
+      className: 'w-40 whitespace-nowrap tabular-nums',
     },
     {
       key: 'releaseDate',
@@ -153,16 +145,6 @@ export default function ArtistAlbums({ isDarkMode = false, onToggleTheme = () =>
         </button>
       ),
       className: 'w-32 whitespace-nowrap',
-    },
-    {
-      key: 'jan',
-      header: (
-        <button type="button" className={sortableHeaderButtonClass} onClick={() => handleSort('jan')} aria-label="JANでソート">
-          JAN
-          {sortIcon('jan')}
-        </button>
-      ),
-      className: 'w-40 whitespace-nowrap font-mono',
     },
   ];
 
@@ -238,11 +220,14 @@ export default function ArtistAlbums({ isDarkMode = false, onToggleTheme = () =>
                         {album.cover_image_url ? <img src={album.cover_image_url} alt={formatAlbumTitle(album)} loading="lazy" decoding="async" className="h-full w-full object-cover" /> : <span className="text-xs text-slate-500">No Image</span>}
                       </div>
                     </td>
-                    <td className="border-b border-r border-slate-200 px-4 py-3 font-medium dark:border-slate-600"><Link to={getAlbumRoutePath(album)} className="text-blue-600 underline-offset-4 hover:text-blue-800 hover:underline dark:text-sky-400 dark:hover:text-sky-300">{formatAlbumTitle(album)}</Link></td>
-                    <td className="border-b border-r border-slate-200 px-4 py-3 dark:border-slate-600">{album.album_artist?.name ?? '-'}</td>
-                    <td className="border-b border-r border-slate-200 px-4 py-3 font-mono text-sm dark:border-slate-600">{album.catalog_number_display || album.catalog_number || '-'}</td>
-                    <td className="border-b border-r border-slate-200 px-4 py-3 whitespace-nowrap text-slate-600 dark:border-slate-600 dark:text-slate-300">{formatDateDisplay(album.release_date) || '-'}</td>
-                    <td className={`border-b ${isUnit ? 'border-r ' : ''}border-slate-200 px-4 py-3 font-mono text-sm dark:border-slate-600`}>{album.jan ?? '-'}</td>
+                    <td className="border-b border-r border-slate-200 px-4 py-3 dark:border-slate-600">
+                      <div className="flex flex-col gap-2">
+                        <Link to={getAlbumRoutePath(album)} className="text-blue-600 font-medium underline-offset-4 hover:text-blue-800 hover:underline dark:text-sky-400 dark:hover:text-sky-300">{formatAlbumTitle(album)}</Link>
+                        <span className="inline-flex w-fit rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 dark:bg-slate-700 dark:text-slate-100">{formatReleaseTypeLabelJa(album.release_type, album.release_type_label) || '-'}</span>
+                      </div>
+                    </td>
+                    <td className="border-b border-r border-slate-200 px-4 py-3 tabular-nums text-sm dark:border-slate-600">{album.catalog_number_display || album.catalog_number || '-'}</td>
+                    <td className={`border-b ${isUnit ? 'border-r ' : ''}border-slate-200 px-4 py-3 whitespace-nowrap text-slate-600 dark:border-slate-600 dark:text-slate-300`}>{formatDateDisplay(album.release_date) || '-'}</td>
                     {isUnit ? <td className="border-b px-4 py-3 dark:border-slate-600">{membersText(album.unit_members) || '-'}</td> : null}
                   </tr>
                 )}
@@ -254,11 +239,12 @@ export default function ArtistAlbums({ isDarkMode = false, onToggleTheme = () =>
                       </div>
                       <div className="min-w-0 space-y-2">
                         <h3 className="text-base font-semibold leading-6 text-slate-900 dark:text-slate-100">{formatAlbumTitle(album)}</h3>
-                        <p className="line-clamp-2 text-sm text-slate-600 dark:text-slate-300">{album.album_artist?.name ?? '-'}</p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 dark:bg-slate-700 dark:text-slate-100">{formatReleaseTypeLabelJa(album.release_type, album.release_type_label) || '-'}</span>
+                          <span className="text-xs text-slate-600 dark:text-slate-300">{formatDateDisplay(album.release_date) || '-'}</span>
+                        </div>
                         <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
-                          <span className="rounded-full bg-slate-100 px-2.5 py-1 font-mono dark:bg-slate-700">{album.catalog_number_display || album.catalog_number || '-'}</span>
-                          <span>{formatDateDisplay(album.release_date) || '-'}</span>
-                          <span>{album.jan ?? '-'}</span>
+                          <span className="rounded-full bg-slate-100 px-2.5 py-1 tabular-nums dark:bg-slate-700">{album.catalog_number_display || album.catalog_number || '-'}</span>
                         </div>
                         {isUnit && membersText(album.unit_members) ? <p className="text-xs leading-5 text-slate-500 dark:text-slate-400">{membersText(album.unit_members)}</p> : null}
                       </div>

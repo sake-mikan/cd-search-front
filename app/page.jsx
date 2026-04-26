@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import HomeClient from '@/components/HomeClient';
 
 export const metadata = {
@@ -6,5 +7,9 @@ export const metadata = {
 };
 
 export default function HomePage() {
-  return <HomeClient />;
+  return (
+    <Suspense>
+      <HomeClient />
+    </Suspense>
+  );
 }

@@ -1,0 +1,66 @@
+'use client';
+
+import React from 'react';
+import { clsx } from 'clsx';
+import { tableCardClass, tableClass, tableHeadRowClass, tableHeadCellClass, tableRowClass, tableCellClass } from '@/utils/uiTheme';
+
+export default function TrackList({
+  groups,
+  columns,
+  renderDesktopRow,
+  renderMobileCard,
+  desktopMinWidthClass = 'min-w-[1000px]',
+}) {
+  if (!groups || groups.length === 0) return null;
+
+  return (
+    <div className="space-y-8">
+      {groups.map((group) => (
+        <div key={group.discNumber} className="space-y-4">
+          <h3 className="px-2 text-sm font-black tracking-[0.2em] text-slate-500 dark:text-white/30 uppercase">
+            {group.discLabel}
+          </h3>
+
+          {/* Desktop View */}
+          <div className={clsx('hidden lg:block overflow-x-auto', tableCardClass)}>
+            <table className={tableClass}>
+              <thead>
+                <tr className={tableHeadRowClass}>
+                  {columns.map((col) => (
+                    <th key={col.key} className={clsx(tableHeadCellClass, col.className)}>
+                      {col.header}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {group.tracks.map((track, index) =>
+                  renderDesktopRow ? (
+                    renderDesktopRow(track, index, tableRowClass)
+                  ) : (
+                    <tr key={track.id ?? index} className={tableRowClass}>
+                      <td className={tableCellClass}>{track.title}</td>
+                    </tr>
+                  )
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile View */}
+          <div className="grid grid-cols-1 gap-4 lg:hidden">
+            {group.tracks.map((track, index) =>
+              renderMobileCard ? (
+                renderMobileCard(track, index)
+              ) : (
+                <div key={track.id ?? index} className="rounded-xl border border-slate-200 p-4 dark:border-slate-800">
+                  <p className="font-bold">{track.title}</p>
+                </div>
+              )
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}

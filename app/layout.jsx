@@ -1,8 +1,13 @@
-import { Inter } from 'next/font/google';
+import { Inter, Noto_Sans_JP } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/components/ThemeProvider';
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
+const noto = Noto_Sans_JP({ 
+  subsets: ['latin'], 
+  variable: '--font-noto',
+  display: 'swap',
+});
 
 export const metadata = {
   title: {
@@ -27,6 +32,9 @@ export const metadata = {
   robots: {
     index: true,
     follow: true,
+  },
+  icons: {
+    icon: '/favicon.svg',
   },
 };
 
@@ -53,11 +61,11 @@ const themeScript = `
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="ja" suppressHydrationWarning>
+    <html lang="ja" suppressHydrationWarning className={`${inter.variable} ${noto.variable}`}>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className={inter.className} suppressHydrationWarning>
+      <body className={noto.className} suppressHydrationWarning>
         <ThemeProvider>
           {children}
         </ThemeProvider>

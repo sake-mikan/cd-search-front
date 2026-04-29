@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowDown, ArrowUp, ArrowUpDown, CalendarDays, ChevronLeft, ChevronRight, Moon, Search, Sparkles, Sun, CalendarRange, Tag, CloudOff, Globe } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, CalendarDays, ChevronLeft, ChevronRight, Moon, Search, Sparkles, Sun, CalendarRange, Tag, CloudOff, Globe, Music2 } from 'lucide-react';
 import { fetchAllAlbums, fetchMusicBrainzFallbackAlbums } from '@/lib/api';
 import InfoCard from './InfoCard';
 import ResponsiveResultList from './ResponsiveResultList';
@@ -475,9 +475,14 @@ export default function HomeClient() {
                     <div className="relative flex h-full w-full flex-col justify-between p-4">
                       {/* Top Overlay Badges (React版再現) */}
                       <div className="flex items-start justify-between gap-3">
-                        <span className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-black/30 px-3 py-1 text-[11px] font-medium text-white/90 backdrop-blur-sm shadow-sm transition-transform group-hover:scale-105">
-                          <CalendarRange className="h-3 w-3" />{formatDateDisplay(album.release_date) || '-'}
-                        </span>
+                        {(() => {
+                          const typeLabel = formatReleaseTypeLabelJa(album.release_type, album.release_type_label);
+                          return typeLabel ? (
+                            <span className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-black/30 px-3 py-1 text-[11px] font-medium text-white/90 backdrop-blur-sm shadow-sm transition-transform group-hover:scale-105">
+                              <Music2 className="h-3 w-3" />{typeLabel}
+                            </span>
+                          ) : <div />;
+                        })()}
                         <span className="rounded-full border border-white/10 bg-white/10 px-2.5 py-1 text-[10px] font-medium tracking-[0.14em] text-white/85 backdrop-blur-sm shadow-sm transition-transform group-hover:scale-105">{album.catalog_number_display || album.catalog_number || 'unknown'}</span>
                       </div>
 

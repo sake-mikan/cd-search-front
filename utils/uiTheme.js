@@ -31,7 +31,7 @@ export const textareaClass = `${inputClass} min-h-[140px] py-4`;
 
 // ボタン
 export const primaryButtonClass =
-  'inline-flex h-12 items-center justify-center gap-2 rounded-full bg-sky-500 px-8 text-sm font-black text-white shadow-[0_10px_20px_rgba(14,165,233,0.3)] transition-all hover:bg-sky-400 hover:shadow-[0_15px_30px_rgba(14,165,233,0.5)] hover:-translate-y-0.5 active:scale-95 disabled:opacity-50';
+  'inline-flex h-12 items-center justify-center gap-2 rounded-full bg-sky-500 px-8 text-sm font-bold text-white shadow-[0_10px_20px_rgba(14,165,233,0.3)] transition-all hover:bg-sky-400 hover:shadow-[0_15px_30px_rgba(14,165,233,0.5)] hover:-translate-y-0.5 active:scale-95 disabled:opacity-50';
 
 export const secondaryButtonClass =
   'inline-flex h-12 items-center justify-center gap-2 rounded-full bg-slate-200/30 px-8 text-sm font-bold text-slate-700 transition-all hover:bg-slate-200 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10 active:scale-95 backdrop-blur-md';
@@ -45,7 +45,7 @@ export const tableCardClass =
 
 export const tableClass = 'w-full border-collapse text-sm';
 export const tableHeadRowClass = 'bg-slate-100/50 dark:bg-white/5';
-export const tableHeadCellClass = 'px-6 py-4 text-left font-black tracking-widest text-slate-500 dark:text-white/70 uppercase text-[13px] border-b border-slate-200/30 dark:border-white/5';
+export const tableHeadCellClass = 'px-6 py-4 text-left font-bold tracking-widest text-slate-500 dark:text-white/70 uppercase text-[13px] border-b border-slate-200/30 dark:border-white/5';
 export const tableCellClass = 'px-6 py-4 align-top border-b border-slate-200/30 dark:border-white/5 text-slate-700 dark:text-white/80 text-[14px] leading-relaxed';
 export const tableRowClass = 'hover:bg-sky-500/5 transition-colors duration-300';
 
@@ -77,7 +77,7 @@ export function ThemeToggle() {
 
 
 // パジネーション
-export const paginationActiveButtonClass = 'rounded-full bg-sky-500 px-4 py-2 text-sm font-black text-white shadow-lg shadow-sky-500/20';
+export const paginationActiveButtonClass = 'rounded-full bg-sky-500 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-sky-500/20';
 export const paginationButtonClass =
   'rounded-full bg-slate-200/50 px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-200 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10 transition-all';
 

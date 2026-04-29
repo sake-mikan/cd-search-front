@@ -1005,8 +1005,8 @@ export default function AlbumDetailClient() {
     );
   };
 
-  const detailLabelClass = "text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 dark:text-white/50";
-  const detailTextClass = "text-[14px] font-black text-slate-900 dark:text-white";
+  const detailLabelClass = "text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500 dark:text-white/50";
+  const detailTextClass = "text-[14px] font-bold text-slate-900 dark:text-white";
   const detailValueWrapClass = "mt-1 flex min-w-0 items-start gap-2";
   const linkedPeopleClass = "text-sky-600 underline decoration-sky-400/60 underline-offset-8 transition hover:text-sky-700 dark:text-sky-400 dark:decoration-sky-500/40";
   const trackLinkedPeopleClass = "text-sky-600 underline decoration-sky-400/60 underline-offset-8 transition hover:text-sky-700 md:no-underline md:hover:underline md:focus-visible:underline dark:text-sky-400 dark:decoration-sky-500/40";
@@ -1495,7 +1495,7 @@ export default function AlbumDetailClient() {
               <button
                 type="button"
                 onClick={() => setShowCopyButtons(!showCopyButtons)}
-                className={`hidden md:inline-flex h-10 px-4 items-center gap-2 rounded-xl border transition-all text-xs font-black uppercase tracking-widest ${
+                className={`hidden md:inline-flex h-10 px-4 items-center gap-2 rounded-xl border transition-all text-xs font-bold uppercase tracking-widest ${
                   showCopyButtons 
                     ? 'bg-sky-500 border-sky-400 text-white shadow-[0_0_15px_rgba(14,165,233,0.4)]' 
                     : 'bg-white/40 border-slate-200/50 text-slate-500 hover:bg-white/60 dark:bg-black/20 dark:border-white/10 dark:text-white/40 dark:hover:bg-black/40'
@@ -1521,7 +1521,7 @@ export default function AlbumDetailClient() {
               {(releaseTypeText !== '' || titleContextText !== '') && (
                 <div className="flex flex-wrap items-center gap-x-3 sm:gap-x-4 gap-y-1.5 sm:gap-y-2">
                   {releaseTypeText !== '' && (
-                    <span className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-sky-600 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-400 shadow-sm">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-sky-600 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-400 shadow-sm">
                       {releaseTypeText}
                     </span>
                   )}
@@ -1530,7 +1530,7 @@ export default function AlbumDetailClient() {
                   )}
                 </div>
               )}
-              <h1 className="text-2xl sm:text-4xl font-black tracking-tighter break-words text-slate-900 dark:text-white leading-tight">{album?.title ?? `Album ID: ${id}`}</h1>
+              <h1 className="text-2xl sm:text-4xl font-bold tracking-tighter break-words text-slate-900 dark:text-white leading-tight">{album?.title ?? `Album ID: ${id}`}</h1>
             </div>
             <div className="inline-flex items-center gap-2 sm:gap-3 shrink-0 flex-wrap">
               {(hasEditionDisplay || hasMultipleEditionVariants) &&
@@ -1539,7 +1539,7 @@ export default function AlbumDetailClient() {
                     <select
                       value={selectedEditionAlbumId}
                       onChange={handleEditionChange}
-                      className="min-w-[200px] sm:min-w-[240px] rounded-2xl border border-slate-200/50 dark:border-white/10 bg-white/40 dark:bg-slate-900 dark:text-white px-4 py-2 text-sm font-black backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-sky-500/40" title={currentEditionLabel}
+                      className="min-w-[200px] sm:min-w-[240px] rounded-2xl border border-slate-200/50 dark:border-white/10 bg-white/40 dark:bg-slate-900 dark:text-white px-4 py-2 text-sm font-bold backdrop-blur-xl focus:outline-none focus:ring-2 focus:ring-sky-500/40" title={currentEditionLabel}
                     >
                       {effectiveEditionVariants.map((variant) => (
                         <option key={variant.public_id || variant.id} value={getAlbumRouteId(variant)} className="dark:bg-slate-900 dark:text-white">
@@ -1549,7 +1549,7 @@ export default function AlbumDetailClient() {
                     </select>
                   </label>
                 ) : (
-                  <span className="px-4 py-2 rounded-full bg-white/10 border border-white/5 text-[11px] font-black tracking-widest uppercase text-slate-500 dark:text-white/40">{editionDisplayText}</span>
+                  <span className="px-4 py-2 rounded-full bg-white/10 border border-white/5 text-[11px] font-bold tracking-widest uppercase text-slate-500 dark:text-white/40">{editionDisplayText}</span>
                 ))}
               {renderCopyIcon(albumTitleText, 'album-title', 'アルバム名', 'アルバム名をコピー')}
               {hasEdition && renderCopyIcon(albumTitleEditionText, 'album-title-edition', 'アルバム名+形態', 'アルバム名+形態をコピー')}
@@ -1577,10 +1577,10 @@ export default function AlbumDetailClient() {
                   </div>
                 </>
               ) : (
-                <div className="text-white/10 font-black text-4xl italic tracking-tighter">No Image</div>
+                <div className="text-white/10 font-bold text-4xl italic tracking-tighter">No Image</div>
               )}
               {coverCopyrightText && (
-                <div className="absolute bottom-4 right-4 px-2 py-0.5 rounded bg-black/40 backdrop-blur-md border border-white/10 text-[8px] font-black text-white/40 uppercase tracking-widest">
+                <div className="absolute bottom-4 right-4 px-2 py-0.5 rounded bg-black/40 backdrop-blur-md border border-white/10 text-[8px] font-bold text-white/40 uppercase tracking-widest">
                   {coverCopyrightText}
                 </div>
               )}
@@ -1607,7 +1607,7 @@ export default function AlbumDetailClient() {
             )}
             
             {coverMetaText && (
-              <p className="mt-3 px-2 text-[10px] font-black tracking-widest text-slate-400 dark:text-white/40 uppercase">{coverMetaText}</p>
+              <p className="mt-3 px-2 text-[10px] font-bold tracking-widest text-slate-400 dark:text-white/40 uppercase">{coverMetaText}</p>
             )}
           </div>
 
@@ -1655,7 +1655,7 @@ export default function AlbumDetailClient() {
             {albumCommentText !== '' && (
               <div className={`${panelMutedClass} border-slate-200/50 bg-white/40 dark:bg-black/20 backdrop-blur-md`}>
                 <details className="group" open={commentOpen} onToggle={(event) => setCommentOpen(event.currentTarget.open)}>
-                  <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-xs font-black tracking-widest text-slate-500 dark:text-white/70 uppercase">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-xs font-bold tracking-widest text-slate-500 dark:text-white/70 uppercase">
                     <span>商品説明・コメント</span>
                     <span className="text-[10px] opacity-80">{commentOpen ? '▲ 閉じる' : '▼ 開く'}</span>
                   </summary>
@@ -1674,7 +1674,7 @@ export default function AlbumDetailClient() {
               <ul className="flex flex-wrap items-center gap-2 sm:gap-3">
                 {albumLinks.map((link) => (
                   <li key={link.id} className="inline-flex items-center gap-3 rounded-2xl border border-slate-200/50 bg-white/40 px-3 py-2 sm:px-4 sm:py-2.5 dark:border-white/5 dark:bg-black/20 backdrop-blur-xl transition-all hover:border-sky-500 group">
-                    <span className="rounded-lg bg-slate-100 dark:bg-white/5 px-2 py-1 text-[9px] font-black text-slate-500 dark:text-white/50 tracking-widest uppercase">
+                    <span className="rounded-lg bg-slate-100 dark:bg-white/5 px-2 py-1 text-[9px] font-bold text-slate-500 dark:text-white/50 tracking-widest uppercase">
                       {albumLinkTypeLabel(link.type)}
                     </span>
                     {link.url ? (
@@ -1682,7 +1682,7 @@ export default function AlbumDetailClient() {
                         href={link.url}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-sm font-black text-sky-600 hover:text-sky-700 dark:text-sky-400 group-hover:underline decoration-2 underline-offset-4"
+                        className="text-sm font-bold text-sky-600 hover:text-sky-700 dark:text-sky-400 group-hover:underline decoration-2 underline-offset-4"
                       >
                         {albumLinkTitle(link)}
                       </a>
@@ -1704,7 +1704,7 @@ export default function AlbumDetailClient() {
             <div className="space-y-3 sm:space-y-4">
               <div className="flex items-center gap-3">
                 <div className="h-3 w-3 rounded-full bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.8)]" />
-                <h2 className="text-xl font-black tracking-tighter">このCD情報でタグを書き込み</h2>
+                <h2 className="text-xl font-bold tracking-tighter">このCD情報でタグを書き込み</h2>
               </div>
               {support.supported && (
                 <p className="text-sm font-bold text-slate-500 dark:text-slate-400 leading-relaxed max-w-2xl">
@@ -1720,7 +1720,7 @@ export default function AlbumDetailClient() {
                   type="button"
                   onClick={handleSelectFiles}
                   disabled={!workerReady || isWriting}
-                  className="inline-flex h-11 sm:h-12 items-center gap-2 sm:gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-5 sm:px-6 text-sm font-black text-emerald-600 shadow-sm transition hover:bg-emerald-500/20 disabled:opacity-50 dark:text-emerald-400"
+                  className="inline-flex h-11 sm:h-12 items-center gap-2 sm:gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-5 sm:px-6 text-sm font-bold text-emerald-600 shadow-sm transition hover:bg-emerald-500/20 disabled:opacity-50 dark:text-emerald-400"
                 >
                   <File className="h-5 w-5" />
                   ファイル選択
@@ -1729,7 +1729,7 @@ export default function AlbumDetailClient() {
                   type="button"
                   onClick={handleSelectFolder}
                   disabled={!workerReady || isWriting}
-                  className="inline-flex h-11 sm:h-12 items-center gap-2 sm:gap-3 rounded-2xl border border-sky-500/20 bg-sky-500/10 px-5 sm:px-6 text-sm font-black text-sky-600 shadow-sm transition hover:bg-sky-500/20 disabled:opacity-50 dark:text-sky-400"
+                  className="inline-flex h-11 sm:h-12 items-center gap-2 sm:gap-3 rounded-2xl border border-sky-500/20 bg-sky-500/10 px-5 sm:px-6 text-sm font-bold text-sky-600 shadow-sm transition hover:bg-sky-500/20 disabled:opacity-50 dark:text-sky-400"
                 >
                   <FolderOpen className="h-5 w-5" />
                   フォルダ選択
@@ -1758,7 +1758,7 @@ export default function AlbumDetailClient() {
                 type="button"
                 onClick={() => setIsTagOptionExpanded((prev) => !prev)}
                 disabled={isWriting}
-                className="inline-flex items-center px-4 py-2 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 text-[10px] font-black tracking-widest text-slate-600 dark:text-white/60 hover:bg-slate-200 dark:hover:bg-white/10 transition-all uppercase"
+                className="inline-flex items-center px-4 py-2 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200/50 dark:border-white/5 text-[10px] font-bold tracking-widest text-slate-600 dark:text-white/60 hover:bg-slate-200 dark:hover:bg-white/10 transition-all uppercase"
               >
                 {shouldShowTagOptionDetails ? '▲ 詳細を閉じる' : '▼ 詳細を開く'}
               </button>
@@ -1782,12 +1782,12 @@ export default function AlbumDetailClient() {
 
                   {embedCover && hasMultipleCovers && (
                     <div className="space-y-3 pl-8">
-                      <span className="text-[10px] font-black text-slate-400 dark:text-white/20 uppercase tracking-widest">使用するジャケットを選択</span>
+                      <span className="text-[10px] font-bold text-slate-400 dark:text-white/20 uppercase tracking-widest">使用するジャケットを選択</span>
                       <select
                         value={tagCover?.key ?? ''}
                         onChange={(e) => setTagCoverKey(String(e.target.value ?? ''))}
                         disabled={isWriting}
-                        className="w-full max-w-xs h-10 rounded-xl border border-slate-200/50 dark:border-white/10 bg-white/40 dark:bg-black/20 px-4 text-xs font-black backdrop-blur-xl focus:ring-2 focus:ring-sky-500/20 transition-all outline-none"
+                        className="w-full max-w-xs h-10 rounded-xl border border-slate-200/50 dark:border-white/10 bg-white/40 dark:bg-black/20 px-4 text-xs font-bold backdrop-blur-xl focus:ring-2 focus:ring-sky-500/20 transition-all outline-none"
                       >
                         {coverOptions.map((cover, index) => (
                           <option key={cover.key} value={cover.key}>
@@ -1838,13 +1838,13 @@ export default function AlbumDetailClient() {
 
                 <div className="space-y-4 md:col-span-2">
                   <div className="space-y-3">
-                    <span className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">リネーム書式</span>
+                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">リネーム書式</span>
                     <input
                       type="text"
                       value={renamePattern}
                       onChange={(e) => setRenamePattern(e.target.value)}
                       disabled={!renameOnWrite || isWriting}
-                      className="w-full h-12 rounded-2xl border border-slate-200/50 dark:border-white/10 bg-white/40 dark:bg-black/20 px-5 text-sm font-black backdrop-blur-xl focus:ring-4 focus:ring-sky-500/10 transition-all outline-none disabled:opacity-30"
+                      className="w-full h-12 rounded-2xl border border-slate-200/50 dark:border-white/10 bg-white/40 dark:bg-black/20 px-5 text-sm font-bold backdrop-blur-xl focus:ring-4 focus:ring-sky-500/10 transition-all outline-none disabled:opacity-30"
                       placeholder="$num(%track%,2) %title%"
                     />
                     <p className="text-[11px] font-bold text-slate-400 dark:text-white/90 leading-relaxed uppercase tracking-widest">
@@ -1875,9 +1875,9 @@ export default function AlbumDetailClient() {
           )}
 
           {!support.supported && <div className="mt-6 sm:mt-8 p-6 rounded-3xl bg-amber-500/5 border border-amber-500/20 text-sm font-bold text-amber-600 dark:text-amber-400">{support.reason}</div>}
-          {workerError && <div className="mt-4 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-xs font-black text-red-600 dark:text-red-400">{workerError}</div>}
-          {tagError && <div className="mt-4 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-xs font-black text-red-600 dark:text-red-400">{tagError}</div>}
-          {tagMessage && <div className="mt-4 text-xs font-black tracking-widest text-slate-500 dark:text-white/80 uppercase animate-pulse">{tagMessage}</div>}
+          {workerError && <div className="mt-4 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-xs font-bold text-red-600 dark:text-red-400">{workerError}</div>}
+          {tagError && <div className="mt-4 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-xs font-bold text-red-600 dark:text-red-400">{tagError}</div>}
+          {tagMessage && <div className="mt-4 text-xs font-bold tracking-widest text-slate-500 dark:text-white/80 uppercase animate-pulse">{tagMessage}</div>}
 
           {(isWriting || tagProgress > 0) && (
             <div className="mt-5 sm:mt-6 w-full h-1.5 rounded-full bg-slate-100 dark:bg-white/5 overflow-hidden">
@@ -1892,17 +1892,17 @@ export default function AlbumDetailClient() {
                   <table className="w-full border-collapse text-xs">
                   <thead>
                     <tr className="bg-slate-100/50 dark:bg-white/5">
-                      <th className="px-6 py-4 text-left font-black tracking-widest text-slate-400 dark:text-white/60 uppercase border-b border-slate-200/30 dark:border-white/5">ファイル名 / サイズ</th>
-                      <th className="px-6 py-4 text-left font-black tracking-widest text-slate-400 dark:text-white/60 uppercase border-b border-slate-200/30 dark:border-white/5">割り当てトラック</th>
-                      <th className="px-6 py-4 text-left font-black tracking-widest text-slate-400 dark:text-white/60 uppercase border-b border-slate-200/30 dark:border-white/5">ステータス</th>
+                      <th className="px-6 py-4 text-left font-bold tracking-widest text-slate-400 dark:text-white/60 uppercase border-b border-slate-200/30 dark:border-white/5">ファイル名 / サイズ</th>
+                      <th className="px-6 py-4 text-left font-bold tracking-widest text-slate-400 dark:text-white/60 uppercase border-b border-slate-200/30 dark:border-white/5">割り当てトラック</th>
+                      <th className="px-6 py-4 text-left font-bold tracking-widest text-slate-400 dark:text-white/60 uppercase border-b border-slate-200/30 dark:border-white/5">ステータス</th>
                     </tr>
                   </thead>
                   <tbody>
                     {tagFiles.map((f) => (
                       <tr key={f.key} className="hover:bg-sky-500/5 transition-colors">
                         <td className="px-6 py-5 border-b border-slate-200/30 dark:border-white/5">
-                          <div className="font-black text-slate-700 dark:text-white/95 truncate max-w-xs" title={f.name}>{f.name}</div>
-                          <div className="text-[10px] font-black text-slate-400 dark:text-white/50 mt-1 uppercase tracking-widest">{formatFileSize(f.size)}</div>
+                          <div className="font-bold text-slate-700 dark:text-white/95 truncate max-w-xs" title={f.name}>{f.name}</div>
+                          <div className="text-[10px] font-bold text-slate-400 dark:text-white/50 mt-1 uppercase tracking-widest">{formatFileSize(f.size)}</div>
                         </td>
                         <td className="px-6 py-5 border-b border-slate-200/30 dark:border-white/5">
                           <select
@@ -1915,7 +1915,7 @@ export default function AlbumDetailClient() {
                                 message: e.target.value ? '待機中' : 'トラック未割り当て',
                               })
                             }
-                            className="w-full h-10 rounded-xl border border-slate-200/50 dark:border-white/10 bg-white/40 dark:bg-black/20 px-4 text-xs font-black backdrop-blur-xl focus:ring-2 focus:ring-sky-500/20 transition-all outline-none"
+                            className="w-full h-10 rounded-xl border border-slate-200/50 dark:border-white/10 bg-white/40 dark:bg-black/20 px-4 text-xs font-bold backdrop-blur-xl focus:ring-2 focus:ring-sky-500/20 transition-all outline-none"
                           >
                             <option value="">未割り当て</option>
                             {taggableTracks.map((t) => (
@@ -1927,7 +1927,7 @@ export default function AlbumDetailClient() {
                         </td>
                         <td className="px-6 py-5 border-b border-slate-200/30 dark:border-white/5">
                           <div className="flex flex-col gap-1">
-                            <span className={`inline-flex w-fit px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-widest ${f.status === 'success' ? 'bg-emerald-500 text-white' : f.status === 'error' ? 'bg-red-500 text-white' : 'bg-slate-200 dark:bg-white/20 text-slate-500 dark:text-white/80 shadow-sm'}`}>
+                            <span className={`inline-flex w-fit px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-widest ${f.status === 'success' ? 'bg-emerald-500 text-white' : f.status === 'error' ? 'bg-red-500 text-white' : 'bg-slate-200 dark:bg-white/20 text-slate-500 dark:text-white/80 shadow-sm'}`}>
                               {f.status}
                             </span>
                             <span className="text-[10px] font-bold text-slate-500 dark:text-white/70 leading-relaxed">{f.message}</span>
@@ -1944,7 +1944,7 @@ export default function AlbumDetailClient() {
                   type="button"
                   onClick={handleWriteTags}
                   disabled={!support.supported || !workerReady || isWriting || tagFiles.length === 0}
-                  className="inline-flex h-14 items-center gap-3 rounded-full bg-emerald-500 px-10 text-sm font-black text-white shadow-[0_10px_20px_rgba(16,185,129,0.3)] transition-all hover:bg-emerald-400 hover:shadow-[0_15px_30px_rgba(16,185,129,0.5)] hover:-translate-y-1 active:scale-95 disabled:opacity-50"
+                  className="inline-flex h-14 items-center gap-3 rounded-full bg-emerald-500 px-10 text-sm font-bold text-white shadow-[0_10px_20px_rgba(16,185,129,0.3)] transition-all hover:bg-emerald-400 hover:shadow-[0_15px_30px_rgba(16,185,129,0.5)] hover:-translate-y-1 active:scale-95 disabled:opacity-50"
                 >
                   {isWriting ? <Loader2 className="w-5 h-5 animate-spin" /> : <WandSparkles className="w-5 h-5" />}
                   書き込み開始
@@ -1954,14 +1954,14 @@ export default function AlbumDetailClient() {
           )}
         </div>
 
-        {loading && <p className="text-center py-20 font-black tracking-[0.2em] text-slate-400 animate-pulse uppercase">Synchronizing Sectors...</p>}
-        {error && <p className="p-8 rounded-[32px] bg-red-500/10 border border-red-500/20 font-black text-red-600 dark:text-red-400 uppercase tracking-widest">{error}</p>}
+        {loading && <p className="text-center py-20 font-bold tracking-[0.2em] text-slate-400 animate-pulse uppercase">Synchronizing Sectors...</p>}
+        {error && <p className="p-8 rounded-[32px] bg-red-500/10 border border-red-500/20 font-bold text-red-600 dark:text-red-400 uppercase tracking-widest">{error}</p>}
 
         {!loading && !error && (
           <section className="mt-6 sm:mt-8 space-y-4 sm:space-y-6">
             <div className="flex items-center gap-3 px-2">
               <div className="h-1.5 w-1.5 rounded-full bg-sky-500 shadow-[0_0_8px_rgba(14,165,233,0.8)]" />
-              <h2 className="text-sm font-black tracking-[0.2em] text-slate-900 dark:text-white uppercase">トラック一覧</h2>
+              <h2 className="text-sm font-bold tracking-[0.2em] text-slate-900 dark:text-white uppercase">トラック一覧</h2>
             </div>
             {trackListGroups.length > 0 ? (
               <TrackList
@@ -1980,14 +1980,14 @@ export default function AlbumDetailClient() {
                 desktopMinWidthClass="min-w-[1360px]"
                 renderDesktopRow={(track, index, rowClass) => (
                   <tr key={track.__rowKey ?? track.id ?? index} className={rowClass}>
-                    <td className="px-6 py-4 border-b border-slate-200/30 dark:border-white/5 font-black text-slate-400 dark:text-white tabular-nums">{showValue(track.track_number)}</td>
+                    <td className="px-6 py-4 border-b border-slate-200/30 dark:border-white/5 font-bold text-slate-400 dark:text-white tabular-nums">{showValue(track.track_number)}</td>
                     <td className="px-6 py-4 border-b border-slate-200/30 dark:border-white/5">{renderTrackField(track.title, `t-${track.id}-title`, '曲名')}</td>
                     <td className="px-6 py-4 border-b border-slate-200/30 dark:border-white/5">{renderLinkedPeopleField(track?.credits?.vocal, `t-${track.id}-artist`, 'アーティスト', 'vocal', trackLinkedPeopleClass)}</td>
                     <td className="px-6 py-4 border-b border-slate-200/30 dark:border-white/5">{renderLinkedPeopleField(track?.credits?.lyricist, `t-${track.id}-lyricist`, '作詞', 'lyricist', trackLinkedPeopleClass)}</td>
                     <td className="px-6 py-4 border-b border-slate-200/30 dark:border-white/5">{renderLinkedPeopleField(track?.credits?.composer, `t-${track.id}-composer`, '作曲', 'composer', trackLinkedPeopleClass)}</td>
                     <td className="px-6 py-4 border-b border-slate-200/30 dark:border-white/5">{renderLinkedPeopleField(track?.credits?.arranger, `t-${track.id}-arranger`, '編曲', 'arranger', trackLinkedPeopleClass)}</td>
                     <td className="px-6 py-4 border-b border-slate-200/30 dark:border-white/5">{renderTrackField(track.genre, `t-${track.id}-genre`, 'ジャンル')}</td>
-                    <td className="px-6 py-4 border-b border-slate-200/30 dark:border-white/5 font-black text-slate-400 dark:text-white tabular-nums">{renderTrackField(track.duration, `t-${track.id}-duration`, '時間', false)}</td>
+                    <td className="px-6 py-4 border-b border-slate-200/30 dark:border-white/5 font-bold text-slate-400 dark:text-white tabular-nums">{renderTrackField(track.duration, `t-${track.id}-duration`, '時間', false)}</td>
                     <td className="px-6 py-4 border-b border-slate-200/30 dark:border-white/5 text-[10px] font-bold text-slate-500 dark:text-white leading-relaxed">{renderTrackField(track.comment, `t-${track.id}-comment`, 'コメント')}</td>
                   </tr>
                 )}
@@ -2005,15 +2005,15 @@ export default function AlbumDetailClient() {
                     >
                       <div className="space-y-4 sm:space-y-5">
                         <div className="space-y-1">
-                          <p className="text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-white/20">TR {showValue(track.track_number)}</p>
-                          <p className="text-base sm:text-lg font-black leading-tight text-slate-900 dark:text-white">{showValue(track.title)}</p>
+                          <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 dark:text-white/20">TR {showValue(track.track_number)}</p>
+                          <p className="text-base sm:text-lg font-bold leading-tight text-slate-900 dark:text-white">{showValue(track.title)}</p>
                         </div>
                         <div>
                           <p className={detailLabelClass}>アーティスト</p>
                           <div className={detailValueWrapClass}>{renderLinkedPeopleField(credits.vocal, `m-${track.id}-artist`, 'アーティスト', 'vocal')}</div>
                         </div>
                         <details className="rounded-2xl border border-slate-200/50 bg-slate-50/50 dark:bg-black/20 dark:border-white/5 group/details">
-                          <summary className="cursor-pointer list-none px-4 py-3 text-[10px] font-black tracking-widest text-slate-500 dark:text-white/50 uppercase flex items-center justify-between">
+                          <summary className="cursor-pointer list-none px-4 py-3 text-[10px] font-bold tracking-widest text-slate-500 dark:text-white/50 uppercase flex items-center justify-between">
                             <span>詳細クレジット</span>
                             <span className="text-[10px] opacity-60 transition-transform group-open/details:rotate-180">▼</span>
                           </summary>
@@ -2028,7 +2028,7 @@ export default function AlbumDetailClient() {
                               <div><p className={detailLabelClass}>編曲</p><div className={detailValueWrapClass}>{renderLinkedPeopleField(credits.arranger, `m-${track.id}-arranger`, '編曲', 'arranger')}</div></div>
                             )}
                             <div><p className={detailLabelClass}>ジャンル</p><div className={detailValueWrapClass}>{renderTrackField(track.genre, `m-${track.id}-genre`, 'ジャンル')}</div></div>
-                            <div><p className={detailLabelClass}>時間</p><div className={detailValueWrapClass}><span className="text-[14px] sm:text-base font-black text-slate-900 dark:text-white tabular-nums">{showValue(track.duration)}</span></div></div>
+                            <div><p className={detailLabelClass}>時間</p><div className={detailValueWrapClass}><span className="text-[14px] sm:text-base font-bold text-slate-900 dark:text-white tabular-nums">{showValue(track.duration)}</span></div></div>
                             {hasComment && (
                               <div><p className={detailLabelClass}>コメント</p><div className="mt-1.5 sm:mt-2 text-xs font-bold text-slate-500 dark:text-white/40 leading-relaxed italic">{showValue(track.comment)}</div></div>
                             )}
@@ -2050,12 +2050,12 @@ export default function AlbumDetailClient() {
           <div className="mt-6 sm:mt-8 rounded-[32px] border border-slate-200/50 bg-slate-50/50 p-5 sm:p-6 dark:border-white/5 dark:bg-black/10 backdrop-blur-xl">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="space-y-1.5">
-                <p className="text-sm font-black text-slate-500 dark:text-white/50 uppercase tracking-widest">情報時点: {informationUpdatedAtText}</p>
+                <p className="text-sm font-bold text-slate-500 dark:text-white/50 uppercase tracking-widest">情報時点: {informationUpdatedAtText}</p>
                 <p className="text-xs font-bold text-slate-600 dark:text-white/60">誤りや不足がある場合のみ、参考URL付きで送信してください。</p>
               </div>
               <Link
                 href={`/albums/${canonicalAlbumId}/correction-request`}
-                className="inline-flex items-center justify-center rounded-xl border border-sky-500/30 bg-sky-500/10 px-5 py-2.5 text-xs font-black text-sky-600 dark:text-sky-400 hover:bg-sky-500 hover:text-white dark:hover:bg-sky-500 transition-all uppercase tracking-widest shadow-[0_0_15px_rgba(14,165,233,0.1)] hover:shadow-[0_0_20px_rgba(14,165,233,0.3)] active:scale-95"
+                className="inline-flex items-center justify-center rounded-xl border border-sky-500/30 bg-sky-500/10 px-5 py-2.5 text-xs font-bold text-sky-600 dark:text-sky-400 hover:bg-sky-500 hover:text-white dark:hover:bg-sky-500 transition-all uppercase tracking-widest shadow-[0_0_15px_rgba(14,165,233,0.1)] hover:shadow-[0_0_20px_rgba(14,165,233,0.3)] active:scale-95"
               >
                 修正依頼フォーム
               </Link>

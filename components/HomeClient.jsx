@@ -396,11 +396,9 @@ export default function HomeClient() {
       <ThemeToggle />
 
       <div className={pageCardClass}>
-        <SiteBrandHeader isHome={true} />
+        <SiteBrandHeader isHome={true} hideSearchOnMobile={true} />
 
-        <div className="!-mt-4">
-          <FeatureIntroCards />
-        </div>
+        <FeatureIntroCards />
 
         {/* Search Engine Card */}
         <SearchHeroCard

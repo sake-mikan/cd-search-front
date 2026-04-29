@@ -295,7 +295,7 @@ export default function ContentSearchClient() {
       <ThemeToggle />
 
       <div className={pageCardClass}>
-        <SiteBrandHeader />
+        <SiteBrandHeader hideSearchOnMobile={true} />
 
         <FeatureIntroCards />
 

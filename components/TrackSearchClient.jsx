@@ -11,7 +11,7 @@ import ResponsiveResultList from '@/components/ResponsiveResultList';
 import SearchHeroCard from '@/components/SearchHeroCard';
 import SiteBrandHeader from '@/components/SiteBrandHeader';
 import FeatureIntroCards from '@/components/FeatureIntroCards';
-import SearchValueHighlights from '@/components/SearchValueHighlights';
+import SearchValueHighlights from './SearchValueHighlights';
 import { fetchTracks } from '@/lib/api';
 import { getAlbumRoutePath } from '@/utils/albumPublicId';
 import {
@@ -203,7 +203,7 @@ export default function TrackSearchClient() {
       <ThemeToggle />
 
       <div className={pageCardClass}>
-        <SiteBrandHeader />
+        <SiteBrandHeader hideSearchOnMobile={true} />
 
         <FeatureIntroCards />
 

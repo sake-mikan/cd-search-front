@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Search, X } from 'lucide-react';
 import DiscMasterLogo from './DiscMasterLogo';
 
-export default function SiteBrandHeader({ className = '', actions = null, isHome = false }) {
+export default function SiteBrandHeader({ className = '', actions = null, isHome = false, hideSearchOnMobile = false }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [query, setQuery] = useState('');
@@ -36,26 +36,26 @@ export default function SiteBrandHeader({ className = '', actions = null, isHome
   };
 
   return (
-    <header className={`flex flex-col gap-6 md:flex-row md:items-center md:justify-between py-2 ${className}`}>
+    <header className={`flex flex-col gap-4 md:gap-6 md:flex-row md:items-center md:justify-between py-2 ${className}`}>
       {/* Brand Logo & Tagline */}
-      <div className="flex items-center gap-4 group shrink-0">
-        <Link href="/" className="flex items-center gap-3">
+      <div className="flex items-center gap-3 md:gap-4 group shrink-0 w-full md:w-auto">
+        <Link href="/" className="flex items-center gap-2 md:gap-3 w-full md:w-auto">
           <DiscMasterLogo iconOnly />
-          <div className="flex flex-col">
-            <LogoWrapper className="text-3xl font-black tracking-tight uppercase leading-none">
-              <span className="text-slate-950 dark:text-white">DISC</span>
+          <div className="flex flex-col flex-1">
+            <LogoWrapper className="text-[28px] xs:text-3xl md:text-3xl font-black tracking-tighter sm:tracking-tight uppercase leading-none">
+              <span className="text-slate-950 dark:text-white">DISC</span>{' '}
               <span className="bg-gradient-to-r from-sky-500 via-cyan-400 to-blue-500 bg-clip-text text-transparent dark:from-sky-300 dark:via-cyan-300 dark:to-blue-400 drop-shadow-[0_0_15px_rgba(14,165,233,0.3)]">
                 MASTER
               </span>
             </LogoWrapper>
-            <span className="text-[10px] font-bold tracking-[0.25em] text-slate-500 dark:text-sky-400/50 uppercase mt-2">
+            <span className="text-[9px] md:text-[10px] font-bold tracking-[0.2em] md:tracking-[0.25em] text-slate-500 dark:text-sky-400/50 uppercase mt-1.5 md:mt-2">
               楽曲メタデータ検索・管理 データベース
             </span>
           </div>
         </Link>
       </div>
 
-      <div className="flex flex-1 items-center justify-end gap-3 md:gap-4 min-w-0 w-full">
+      <div className={`flex-1 items-center justify-end gap-3 md:gap-4 min-w-0 w-full ${hideSearchOnMobile ? 'hidden md:flex' : 'flex'}`}>
         {/* Global Explorer Bar */}
         <form onSubmit={handleSearch} className="relative flex-1 md:w-full md:max-w-md group/search">
           <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
@@ -65,8 +65,8 @@ export default function SiteBrandHeader({ className = '', actions = null, isHome
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="GLOBAL EXPLORE"
-            className="h-11 w-full rounded-full border border-slate-200/50 bg-white/20 pl-11 pr-10 text-[10px] font-black tracking-[0.2em] text-slate-900 dark:text-white dark:border-white/5 dark:bg-white/5 backdrop-blur-xl focus:outline-none focus:ring-4 focus:ring-sky-500/10 transition-all placeholder:text-slate-400 dark:placeholder:text-white/20"
+            placeholder="検索"
+            className="h-10 md:h-11 w-full rounded-xl md:rounded-full border border-slate-300 dark:border-white/10 bg-white/40 pl-11 pr-10 text-xs font-black tracking-widest text-slate-900 dark:text-white dark:bg-white/5 backdrop-blur-xl focus:outline-none focus:ring-4 focus:ring-sky-500/10 transition-all placeholder:text-slate-400 dark:placeholder:text-white/20"
           />
           {query && (
             <button

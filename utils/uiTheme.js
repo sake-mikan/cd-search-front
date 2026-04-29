@@ -8,20 +8,20 @@ import { Sun, Moon } from 'lucide-react';
 
 // ガラス質感のパネル
 export const panelClass =
-  'relative overflow-hidden rounded-[32px] border border-slate-200/30 bg-white/60 p-5 md:p-6 shadow-[0_8px_32px_rgba(0,0,0,0.04)] backdrop-blur-2xl dark:border-white/5 dark:bg-slate-900/40 dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all duration-500';
+  'relative overflow-hidden rounded-[32px] border border-slate-200/30 bg-white/60 p-4 md:p-6 shadow-[0_8px_32px_rgba(0,0,0,0.04)] backdrop-blur-2xl dark:border-white/5 dark:bg-slate-900/40 dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)] transition-all duration-500';
 
 export const panelMutedClass =
-  'rounded-[24px] border border-slate-200/20 bg-slate-50/50 p-4 dark:border-white/5 dark:bg-slate-900/60 transition-all duration-500';
+  'rounded-[24px] border border-slate-200/20 bg-slate-50/50 p-3 sm:p-4 dark:border-white/5 dark:bg-slate-900/60 transition-all duration-500';
 
 // ヒーローセクション用の強調パネル
 export const heroPanelClass =
-  'relative overflow-hidden rounded-[32px] border border-slate-200/40 bg-white/80 p-6 md:p-8 shadow-2xl backdrop-blur-3xl dark:border-white/10 dark:bg-slate-900/60 transition-all duration-500';
+  'relative overflow-hidden rounded-[32px] border border-slate-200/40 bg-white/80 p-5 md:p-8 shadow-2xl backdrop-blur-3xl dark:border-white/10 dark:bg-slate-900/60 transition-all duration-500';
 
 export const pageShellClass =
   'relative min-h-screen w-full flex flex-col bg-slate-50 dark:bg-[#020617] text-slate-900 dark:text-slate-100 selection:bg-sky-500/30 font-sans transition-colors duration-500 overflow-x-hidden';
 
 export const pageCardClass =
-  'relative z-10 mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8 space-y-6 flex-1';
+  'relative z-10 mx-auto w-full max-w-7xl px-4 py-4 sm:py-6 sm:px-6 lg:px-8 space-y-4 sm:space-y-6 flex-1';
 
 // フォーム要素
 export const inputClass =

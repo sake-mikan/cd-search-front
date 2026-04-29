@@ -14,9 +14,9 @@ export default function TrackList({
   if (!groups || groups.length === 0) return null;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       {groups.map((group) => (
-        <div key={group.discNumber} className="space-y-4">
+        <div key={group.discNumber} className="space-y-3 sm:space-y-4">
           <h3 className="px-2 text-sm font-black tracking-[0.2em] text-slate-500 dark:text-white/70 uppercase">
             {group.discLabel}
           </h3>
@@ -48,7 +48,7 @@ export default function TrackList({
           </div>
 
           {/* Mobile View */}
-          <div className="grid grid-cols-1 gap-4 lg:hidden">
+          <div className="grid grid-cols-1 gap-3 lg:hidden">
             {group.tracks.map((track, index) =>
               renderMobileCard ? (
                 renderMobileCard(track, index)

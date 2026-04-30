@@ -1580,7 +1580,7 @@ export default function AlbumDetailClient() {
                 <div className="text-white/10 font-bold text-4xl italic tracking-tighter">No Image</div>
               )}
               {coverCopyrightText && (
-                <div className="absolute bottom-4 right-4 px-2 py-0.5 rounded bg-black/40 backdrop-blur-md border border-white/10 text-[8px] font-bold text-white/40 uppercase tracking-widest">
+                <div className="absolute bottom-4 right-4 px-2 py-0.5 rounded bg-black/40 backdrop-blur-md border border-white/10 text-[10px] font-bold text-white/60">
                   {coverCopyrightText}
                 </div>
               )}

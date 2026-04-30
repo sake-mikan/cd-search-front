@@ -8,6 +8,7 @@ import { fetchAllAlbums, fetchMusicBrainzFallbackAlbums } from '@/lib/api';
 import InfoCard from './InfoCard';
 import ResponsiveResultList from './ResponsiveResultList';
 import SearchHeroCard from './SearchHeroCard';
+import BarcodeScanner from './BarcodeScanner';
 import SiteBrandHeader from './SiteBrandHeader';
 import SiteFooter from './SiteFooter';
 import FeatureIntroCards from './FeatureIntroCards';

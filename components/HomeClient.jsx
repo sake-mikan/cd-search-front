@@ -359,6 +359,48 @@ export default function HomeClient() {
     setError(''); setMusicBrainzAlbums([]); setMusicBrainzSearched(false);
   };
 
+  const handleBarcodeScan = async (code) => {
+    setLoading(true);
+    setError('');
+    setHasSearched(true);
+    setResultCount(0);
+    setMusicBrainzAlbums([]);
+    setMusicBrainzError('');
+    setMusicBrainzLoading(false);
+    setMusicBrainzSearched(false);
+
+    try {
+      const response = await fetchAllAlbums({ jan: code });
+      const fetchedAlbums = Array.isArray(response.data) ? response.data : [];
+      
+      if (fetchedAlbums.length > 0) {
+        router.push(getAlbumRoutePath(fetchedAlbums[0]));
+        return;
+      }
+      
+      setMusicBrainzLoading(true);
+      setMusicBrainzSearched(true);
+      
+      try {
+        const fallbackAlbums = await fetchMusicBrainzFallbackAlbums({ jan: code });
+        if (fallbackAlbums && fallbackAlbums.length > 0) {
+          router.push(`/albums/musicbrainz/${fallbackAlbums[0].musicbrainz_id}`);
+          return;
+        }
+        
+        setError('バーコードに一致するCDが見つかりませんでした。');
+      } catch (err) {
+        setError('MusicBrainz の検索に失敗しました。');
+      } finally {
+        setMusicBrainzLoading(false);
+      }
+    } catch (err) {
+      setError('データ検索に失敗しました。');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const changePage = (page) => {
     if (page < 1 || page > lastPage) return;
     setCurrentPage(page);
@@ -432,6 +474,9 @@ export default function HomeClient() {
               <button type="button" onClick={handleClear} className="flex h-12 items-center justify-center rounded-full bg-slate-200/50 px-6 text-sm font-bold text-slate-700 dark:bg-white/5 dark:text-white/60 hover:bg-slate-200 dark:hover:bg-white/10 transition-all backdrop-blur-md">
                 クリア
               </button>
+              <div className="col-span-full md:hidden flex justify-center mt-2">
+                <BarcodeScanner onDetected={handleBarcodeScan} />
+              </div>
             </div>
           </form>
           {!loading && error ? <p className="mt-6 text-sm font-bold text-red-600 dark:text-red-400">{error}</p> : null}

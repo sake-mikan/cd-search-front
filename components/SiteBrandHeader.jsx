@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Search, X } from 'lucide-react';
 import DiscMasterLogo from './DiscMasterLogo';
 
-export default function SiteBrandHeader({ className = '', actions = null, isHome = false, hideSearchOnMobile = false }) {
+function SiteBrandHeaderInner({ className = '', actions = null, isHome = false, hideSearchOnMobile = false }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [query, setQuery] = useState('');
@@ -81,5 +81,13 @@ export default function SiteBrandHeader({ className = '', actions = null, isHome
         {actions && <div className="flex-1 md:flex-none flex items-center gap-3">{actions}</div>}
       </div>
     </header>
+  );
+}
+
+export default function SiteBrandHeader(props) {
+  return (
+    <Suspense fallback={<header className={`flex flex-col gap-4 md:gap-6 md:flex-row md:items-center md:justify-between py-2 ${props.className || ''}`}></header>}>
+      <SiteBrandHeaderInner {...props} />
+    </Suspense>
   );
 }

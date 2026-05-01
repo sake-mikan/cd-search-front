@@ -3,10 +3,16 @@ name: Deploy Front
 on:
   push:
     branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-front-main
+  cancel-in-progress: true
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1
@@ -14,9 +20,21 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command_timeout: 20m
           script: |
+            set -e
+
             cd /var/www/cd-search-front
-            git pull origin main
+
+            echo "Pull latest source..."
+            git fetch origin main
+            git reset --hard origin/main
+
+            echo "Install dependencies..."
             npm ci
+
+            echo "Build Next.js app..."
             npm run build
-            pm2 restart cd-search-front
+
+            echo "Restart PM2..."
+            pm2 restart cd-search-front --update-env

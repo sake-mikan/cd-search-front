@@ -1,13 +1,5 @@
-import { Inter, Noto_Sans_JP } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/components/ThemeProvider';
-
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
-const noto = Noto_Sans_JP({ 
-  subsets: ['latin'], 
-  variable: '--font-noto',
-  display: 'swap',
-});
 
 export const metadata = {
   title: {
@@ -61,11 +53,11 @@ const themeScript = `
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="ja" suppressHydrationWarning className={`${inter.variable} ${noto.variable}`}>
+    <html lang="ja" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className={noto.className} suppressHydrationWarning>
+      <body suppressHydrationWarning>
         <ThemeProvider>
           {children}
         </ThemeProvider>

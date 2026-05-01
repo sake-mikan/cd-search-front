@@ -1,1 +1,6 @@
-export const createRequire = () => () => ({}); export const resolve = () => ''; export default {};
+export const createRequire = () => () => ({});
+export const resolve = () => '';
+
+const emptyModule = {};
+
+export default emptyModule;

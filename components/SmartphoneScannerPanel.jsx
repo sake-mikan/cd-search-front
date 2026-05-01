@@ -22,7 +22,7 @@ function getErrorMessage(error, fallback) {
   return error?.response?.data?.message || fallback;
 }
 
-export default function SmartphoneScannerPanel({ onJanDetected }) {
+export default function SmartphoneScannerPanel({ onJanDetected, buttonClassName = '' }) {
   const [isOpen, setIsOpen] = useState(false);
   const [session, setSession] = useState(null);
   const [statusText, setStatusText] = useState('');
@@ -147,7 +147,7 @@ export default function SmartphoneScannerPanel({ onJanDetected }) {
             <div>
               <h2 className="text-xl font-bold text-slate-950 dark:text-white">スマホをJANスキャナとして使う</h2>
               <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                スマホでQRコードを読み取ると、スマホのカメラを使ってCDのJANコードをスキャンできます。
+                QRコードをスマホで読み取ると、スマホのカメラでCDのJANコードをスキャンできます。
                 読み取った結果はこのPC画面に自動で表示されます。
               </p>
             </div>
@@ -202,9 +202,13 @@ export default function SmartphoneScannerPanel({ onJanDetected }) {
 
   return (
     <>
-      <button type="button" onClick={startSession} className={`${outlineButtonClass} w-full md:w-auto`}>
+      <button
+        type="button"
+        onClick={startSession}
+        className={buttonClassName || `${outlineButtonClass} w-full md:w-auto`}
+      >
         <Smartphone className="h-4 w-4" />
-        スマホでスキャンしてPCに表示
+        スマホでスキャンしてこのPCに表示
       </button>
 
       {isMounted && modal ? createPortal(modal, document.body) : null}

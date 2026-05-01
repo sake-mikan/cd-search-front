@@ -9,12 +9,18 @@ export default function SiteFooter() {
 
   return (
     <footer className="relative z-10 mt-12 pb-16 space-y-6">
-      <div className="flex justify-center gap-8">
+      <div className="flex flex-wrap justify-center gap-x-8 gap-y-3 px-4">
         <Link 
           href="/guide/tag-write" 
           className="text-sm font-bold text-slate-500 dark:text-slate-300 underline decoration-slate-300 dark:decoration-white/20 underline-offset-8 transition-all hover:text-sky-600 dark:hover:text-sky-400"
         >
-          Guide
+          タグ書き込みガイド
+        </Link>
+        <Link 
+          href="/guide/barcode-read" 
+          className="text-sm font-bold text-slate-500 dark:text-slate-300 underline decoration-slate-300 dark:decoration-white/20 underline-offset-8 transition-all hover:text-sky-600 dark:hover:text-sky-400"
+        >
+          JAN読み取りガイド
         </Link>
         <Link 
           href="/site-policy" 

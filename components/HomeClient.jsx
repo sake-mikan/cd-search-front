@@ -475,11 +475,37 @@ export default function HomeClient() {
               <button type="button" onClick={handleClear} className="flex h-12 items-center justify-center rounded-full bg-slate-200/50 px-6 text-sm font-bold text-slate-700 dark:bg-white/5 dark:text-white/60 hover:bg-slate-200 dark:hover:bg-white/10 transition-all backdrop-blur-md">
                 クリア
               </button>
-              <div className="col-span-full md:hidden flex justify-center mt-2">
-                <BarcodeScanner onDetected={handleBarcodeScan} />
+              <div className="col-span-full md:hidden space-y-2">
+                <BarcodeScanner
+                  onDetected={handleBarcodeScan}
+                  buttonLabel="このスマホでバーコード検索"
+                  helperText="CDのバーコード(JANコード)を枠内に合わせてください。読み取ったCD情報をこのスマホで表示します。"
+                />
+                <p className="px-2 text-center text-xs font-medium text-slate-500 dark:text-white/45">
+                  読み取ったCD情報をこのスマホで表示します。
+                </p>
               </div>
-              <div className="col-span-full flex justify-center md:justify-start">
-                <SmartphoneScannerPanel onJanDetected={handleBarcodeScan} />
+              <div className="col-span-full hidden w-full md:grid md:grid-cols-2 md:gap-5">
+                <div className="space-y-2">
+                  <BarcodeScanner
+                    onDetected={handleBarcodeScan}
+                    buttonLabel="このPCのカメラでバーコード読取"
+                    helperText="PCのカメラでCDのJANコードを読み取り、このPC上でCD情報を検索・表示します。"
+                    buttonClassName="inline-flex h-14 w-full items-center justify-center gap-3 rounded-full border border-cyan-400/70 bg-cyan-500/15 px-8 text-sm font-black text-cyan-100 shadow-[0_0_32px_rgba(6,182,212,0.28),inset_0_0_22px_rgba(6,182,212,0.08)] transition-all hover:-translate-y-0.5 hover:border-cyan-300 hover:bg-cyan-500/25 hover:shadow-[0_0_46px_rgba(6,182,212,0.42),inset_0_0_26px_rgba(6,182,212,0.14)] active:scale-95 dark:border-cyan-400/50 dark:bg-cyan-500/15 dark:text-cyan-50 dark:hover:bg-cyan-500/25"
+                  />
+                  <p className="truncate px-3 text-center text-xs font-medium text-slate-500 dark:text-white/50">
+                    PC内蔵カメラやWebカメラで読み取り、このPCで検索します。
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <SmartphoneScannerPanel
+                    onJanDetected={handleBarcodeScan}
+                    buttonClassName="inline-flex h-14 w-full items-center justify-center gap-3 rounded-full border border-cyan-400/70 bg-cyan-500/15 px-8 text-sm font-black text-cyan-100 shadow-[0_0_32px_rgba(6,182,212,0.28),inset_0_0_22px_rgba(6,182,212,0.08)] transition-all hover:-translate-y-0.5 hover:border-cyan-300 hover:bg-cyan-500/25 hover:shadow-[0_0_46px_rgba(6,182,212,0.42),inset_0_0_26px_rgba(6,182,212,0.14)] active:scale-95 dark:border-cyan-400/50 dark:bg-cyan-500/15 dark:text-cyan-50 dark:hover:bg-cyan-500/25"
+                  />
+                  <p className="truncate px-3 text-center text-xs font-medium text-slate-500 dark:text-white/50">
+                    QRコードでスマホをつなぎ、読み取った結果をこのPCに表示します。
+                  </p>
+                </div>
               </div>
             </div>
           </form>

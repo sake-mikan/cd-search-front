@@ -9,6 +9,7 @@ export default function BarcodeScanner({
   buttonLabel = 'CDのバーコードを読取',
   helperText = 'CDのバーコード(JANコード)を枠内に合わせてください',
   className = '',
+  buttonClassName = '',
 }) {
   const [isScanning, setIsScanning] = useState(false);
   const videoRef = useRef(null);
@@ -148,7 +149,7 @@ export default function BarcodeScanner({
       <button
         type="button"
         onClick={() => setIsScanning(true)}
-        className={`${outlineButtonClass} w-full py-4 text-base shadow-sm font-bold bg-white dark:bg-slate-900 border-2 ${className}`}
+        className={buttonClassName || `${outlineButtonClass} w-full py-4 text-base shadow-sm font-bold bg-white dark:bg-slate-900 border-2 ${className}`}
       >
         <Camera className="h-6 w-6" />
         <span>{buttonLabel}</span>

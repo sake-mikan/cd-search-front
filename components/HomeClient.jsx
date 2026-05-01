@@ -9,6 +9,7 @@ import InfoCard from './InfoCard';
 import ResponsiveResultList from './ResponsiveResultList';
 import SearchHeroCard from './SearchHeroCard';
 import BarcodeScanner from './BarcodeScanner';
+import SmartphoneScannerPanel from './SmartphoneScannerPanel';
 import SiteBrandHeader from './SiteBrandHeader';
 import SiteFooter from './SiteFooter';
 import FeatureIntroCards from './FeatureIntroCards';
@@ -476,6 +477,9 @@ export default function HomeClient() {
               </button>
               <div className="col-span-full md:hidden flex justify-center mt-2">
                 <BarcodeScanner onDetected={handleBarcodeScan} />
+              </div>
+              <div className="col-span-full flex justify-center md:justify-start">
+                <SmartphoneScannerPanel onJanDetected={handleBarcodeScan} />
               </div>
             </div>
           </form>

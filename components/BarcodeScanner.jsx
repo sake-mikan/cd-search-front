@@ -4,7 +4,12 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Camera, X } from 'lucide-react';
 import { outlineButtonClass } from '@/utils/uiTheme';
 
-export default function BarcodeScanner({ onDetected }) {
+export default function BarcodeScanner({
+  onDetected,
+  buttonLabel = 'CDのバーコードを読取',
+  helperText = 'CDのバーコード(JANコード)を枠内に合わせてください',
+  className = '',
+}) {
   const [isScanning, setIsScanning] = useState(false);
   const videoRef = useRef(null);
   const streamRef = useRef(null);
@@ -143,10 +148,10 @@ export default function BarcodeScanner({ onDetected }) {
       <button
         type="button"
         onClick={() => setIsScanning(true)}
-        className={`${outlineButtonClass} w-full py-4 text-base shadow-sm font-bold bg-white dark:bg-slate-900 border-2`}
+        className={`${outlineButtonClass} w-full py-4 text-base shadow-sm font-bold bg-white dark:bg-slate-900 border-2 ${className}`}
       >
         <Camera className="h-6 w-6" />
-        <span>CDのバーコードを読取</span>
+        <span>{buttonLabel}</span>
       </button>
 
       {isScanning && (
@@ -179,7 +184,7 @@ export default function BarcodeScanner({ onDetected }) {
           </div>
 
           <div className="h-28 flex items-center justify-center text-white/80 text-sm px-6 text-center pb-8 z-10 bg-gradient-to-t from-black/80 to-transparent">
-            CDのバーコード(JANコード)を枠内に合わせてください
+            {helperText}
           </div>
         </div>
       )}
